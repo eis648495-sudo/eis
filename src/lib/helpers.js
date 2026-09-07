@@ -1,5 +1,6 @@
-// Maintenance status: 120-hour cycle for both grace period and redeemed codes
-const MAINTENANCE_SECONDS = 432000; // 120 hours
+// Maintenance status: 720-hour (30-day) green cycle, 120-hour (5-day) red grace period
+const MAINTENANCE_SECONDS = 2592000; // 720 hours — green banner after redeem
+const GRACE_SECONDS = 432000; // 120 hours — red banner before first redeem
 
 export function maintenanceStatus(member, codes = []) {
   if (!member) return { isGreen: false, secondsLeft: 0, neverRedeemed: true };
@@ -17,7 +18,7 @@ export function maintenanceStatus(member, codes = []) {
     return { isGreen: left > 0, secondsLeft: Math.max(0, left), neverRedeemed: false };
   }
 
-  // User has redeemed a code — GREEN with 120h countdown from last redeem
+  // User has redeemed a code — GREEN with 720h countdown from last redeem
   const usedCodes = codes.filter(c => c.is_used && c.used_by_member_id === member.id && c.used_at);
   if (usedCodes.length > 0) {
     const lastUsed = usedCodes
@@ -29,7 +30,7 @@ export function maintenanceStatus(member, codes = []) {
 
   // User has NOT redeemed — RED with 120h countdown from approval date
   const since = new Date(member.approved_date || member.created_date || Date.now()).getTime();
-  const left = Math.max(0, MAINTENANCE_SECONDS - Math.floor((Date.now() - since) / 1000));
+  const left = Math.max(0, GRACE_SECONDS - Math.floor((Date.now() - since) / 1000));
   return { isGreen: false, secondsLeft: left, neverRedeemed: true };
 }
 

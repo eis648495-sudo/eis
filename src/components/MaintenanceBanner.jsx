@@ -30,17 +30,20 @@ export function MaintenanceBanner() {
           <CheckCircle className="w-5 h-5 flex-shrink-0" />
           <span className="text-sm">Maintenance Active — Expires in:</span>
           <span className="font-mono bg-green-700 px-3 py-1 rounded-lg text-white tracking-widest text-lg font-bold">{formatTime(secondsLeft)}</span>
-          <span className="text-green-100 font-normal text-xs">30 Days</span>
+          <span className="text-green-100 font-normal text-xs">720 Hours</span>
         </>
       ) : (
         <>
           <AlertCircle className="w-5 h-5 flex-shrink-0 animate-pulse" />
-          <span className="text-sm font-bold">⚠ Maintenance Inactive — Please redeem a maintenance code to reactivate!</span>
-          {neverRedeemed && secondsLeft > 0 && (
+          <span className="text-sm font-bold">⚠ Maintenance Inactive — Redeem a code to activate & start earning!</span>
+          {secondsLeft > 0 ? (
             <>
-              <span className="text-red-100 text-sm">Grace period ends in:</span>
-              <span className="font-mono bg-red-700 px-3 py-1 rounded-lg text-white tracking-widest text-lg font-bold">{formatGraceTime(secondsLeft)}</span>
+              <span className="text-red-100 text-sm">Expires in:</span>
+              <span className="font-mono bg-red-700 px-3 py-1 rounded-lg text-white tracking-widest text-lg font-bold">{formatTime(secondsLeft)}</span>
+              <span className="text-red-100 font-normal text-xs">120 Hours</span>
             </>
+          ) : (
+            <span className="font-mono bg-red-700 px-3 py-1 rounded-lg text-white tracking-widest text-lg font-bold">EXPIRED</span>
           )}
         </>
       )}
