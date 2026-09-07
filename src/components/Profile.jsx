@@ -36,7 +36,7 @@ export default function Profile() {
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Please login to view your profile.</p>
-          <Link to="/MemberLogin"><Button className="bg-gradient-to-r from-amber-500 to-orange-600">Login <ArrowRight className="ml-2 w-4 h-4" /></Button></Link>
+          <Link to="/MemberLogin"><Button className="bg-orange-500 hover:bg-orange-600 text-white">Login <ArrowRight className="ml-2 w-4 h-4" /></Button></Link>
         </div>
       </div>
     );

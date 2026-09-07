@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { GitBranch, Search, ArrowRight, Users } from "lucide-react";
+import { GitBranch, Search, ArrowRight, Users, ZoomIn, ZoomOut, CircleDashed } from "lucide-react";
 import { useTable, useCurrentMember } from "../lib/useData";
 import { Button } from "./ui";
 
 export default function Genealogy() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
+  const [zoom, setZoom] = useState(100);
   const { data: members = [], isLoading } = useTable("members");
   const { currentMember } = useCurrentMember(members);
 
@@ -73,7 +74,7 @@ export default function Genealogy() {
           <h1 className="text-3xl font-bold text-gray-900 mb-3">Mamlakah Tree</h1>
           <p className="text-gray-600 mb-6">Please login to view your genealogy.</p>
           <Link to="/MemberLogin">
-            <Button className="bg-gradient-to-r from-amber-500 to-orange-600 text-lg px-8 py-6">Login <ArrowRight className="ml-2 w-5 h-5" /></Button>
+            <Button className="bg-orange-500 hover:bg-orange-600 text-white text-lg px-8 py-6">Login <ArrowRight className="ml-2 w-5 h-5" /></Button>
           </Link>
         </motion.div>
       </div>
@@ -114,8 +115,41 @@ export default function Genealogy() {
         </div>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-3xl shadow-lg border border-gray-100 p-8 overflow-x-auto">
-        {selected && <TreeNode member={selected} />}
+      {/* Status Legend */}
+      <div className="flex items-center gap-4 mb-4 flex-wrap">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-200">
+          <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+          <span className="text-sm font-medium text-green-700">Redeemed Code</span>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-200">
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+          <span className="text-sm font-medium text-red-700">Not Redeemed</span>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 border border-orange-200">
+          <CircleDashed className="w-3.5 h-3.5 text-orange-500" />
+          <span className="text-sm font-medium text-orange-700">Open Slot</span>
+        </div>
+      </div>
+
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+        {/* Zoom controls */}
+        <div className="flex items-center justify-end gap-2 px-4 py-3 border-b border-gray-100">
+          <button onClick={() => setZoom(z => Math.max(50, z - 10))} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-gray-600">
+            <ZoomOut className="w-4 h-4" />
+          </button>
+          <span className="text-sm font-medium text-gray-600 w-12 text-center">{zoom}%</span>
+          <button onClick={() => setZoom(z => Math.min(200, z + 10))} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-gray-600">
+            <ZoomIn className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-8 overflow-x-auto" style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center', transition: 'transform 0.2s' }}>
+          {selected ? <TreeNode member={selected} /> : (
+            <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+              <Users className="w-12 h-12 mb-3 text-gray-300" />
+              <p className="text-sm">No genealogy data available</p>
+            </div>
+          )}
+        </div>
       </motion.div>
 
       {/* Downline stats */}

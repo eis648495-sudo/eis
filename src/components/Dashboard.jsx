@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wallet, ArrowRight, KeyRound, ChevronDown, ChevronUp, Ticket, Clock, AlertCircle, Share2, Check, FileText } from "lucide-react";
+import { Wallet, ArrowRight, KeyRound, ChevronDown, ChevronUp, Ticket, Clock, AlertCircle, Share2, Check, FileText, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, useCurrentMember, createRecord } from "../lib/useData";
 import { money, formatDate, withdrawalCharge, LEVEL_CONFIG } from "../lib/helpers";
@@ -141,13 +141,13 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-md">
-          <div className="w-20 h-20 bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl mx-auto mb-6 flex items-center justify-center">
-            <Wallet className="w-10 h-10 text-white" />
+          <div className="w-20 h-20 bg-orange-500 rounded-3xl mx-auto mb-6 flex items-center justify-center">
+            <Users className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-3">Welcome!</h1>
           <p className="text-gray-600 mb-6">Please login to access your dashboard.</p>
           <Link to="/MemberLogin">
-            <Button className="bg-gradient-to-r from-amber-500 to-orange-600 text-lg px-8 py-6">Login <ArrowRight className="ml-2 w-5 h-5" /></Button>
+            <Button className="bg-orange-500 hover:bg-orange-600 text-white text-lg px-8 py-6">Login <ArrowRight className="ml-2 w-5 h-5" /></Button>
           </Link>
         </motion.div>
       </div>

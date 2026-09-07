@@ -78,7 +78,7 @@ export default function Layout({ children, currentPageName }) {
       </div>
 
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-72 bg-white border-r border-gray-100 flex-col z-40">
+      <aside className="hidden lg:flex fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-gray-100 flex-col z-40">
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <img src={LOGO_URL} alt="Mamlakah" className="w-10 h-10 rounded-xl object-cover" />
@@ -94,7 +94,7 @@ export default function Layout({ children, currentPageName }) {
             const active = currentPageName === item.path;
             return (
               <Link key={item.path} to={navPath(item.path)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${active ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/30" : "text-gray-600 hover:bg-gray-100"}`}>
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${active ? "bg-orange-500 text-white" : "text-gray-600 hover:bg-gray-100"}`}>
                 <Icon className="w-5 h-5" />
                 <span className="font-medium">{item.name}</span>
                 {active && <ChevronRight className="w-4 h-4 ml-auto" />}
@@ -122,7 +122,7 @@ export default function Layout({ children, currentPageName }) {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMobileOpen(false)} className="fixed inset-0 bg-black/50 z-50 lg:hidden" />
             <motion.aside
               initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }} transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed left-0 top-0 bottom-0 w-72 bg-white z-50 lg:hidden flex flex-col"
+              className="fixed left-0 top-0 bottom-0 w-64 bg-white z-50 lg:hidden flex flex-col"
             >
               <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -139,7 +139,7 @@ export default function Layout({ children, currentPageName }) {
                   const active = currentPageName === item.path;
                   return (
                     <Link key={item.path} to={navPath(item.path)} onClick={() => setMobileOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${active ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white" : "text-gray-600 hover:bg-gray-100"}`}>
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${active ? "bg-orange-500 text-white" : "text-gray-600 hover:bg-gray-100"}`}>
                       <Icon className="w-5 h-5" />
                       <span className="font-medium">{item.name}</span>
                     </Link>
@@ -162,7 +162,7 @@ export default function Layout({ children, currentPageName }) {
         )}
       </AnimatePresence>
 
-      <main className="lg:ml-72 pt-16 lg:pt-0 min-h-screen">
+      <main className="lg:ml-64 pt-16 lg:pt-0 min-h-screen">
         <MaintenanceBanner />
         {children}
         <GCashButton />

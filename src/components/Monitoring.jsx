@@ -24,7 +24,7 @@ export default function Monitoring() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-3">Monitoring</h1>
           <p className="text-gray-600 mb-6">Please login to access your downline monitoring.</p>
-          <Link to="/MemberLogin"><Button className="bg-gradient-to-r from-amber-500 to-orange-600 text-lg px-8 py-6">Login <ArrowRight className="ml-2 w-5 h-5" /></Button></Link>
+          <Link to="/MemberLogin"><Button className="bg-orange-500 hover:bg-orange-600 text-white text-lg px-8 py-6">Login <ArrowRight className="ml-2 w-5 h-5" /></Button></Link>
         </motion.div>
       </div>
     );
