@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, LogIn, Crown } from "lucide-react";
+import { Button } from "./ui";
 
 const STATS = [
   { label: "Active Members", value: "Growing" },
