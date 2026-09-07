@@ -173,20 +173,6 @@ export default function Dashboard() {
     );
   }
 
-  if (currentMember?.status === "pending") {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-md bg-white rounded-3xl p-8 shadow-xl border border-amber-100">
-          <div className="w-20 h-20 bg-gradient-to-br from-amber-400 to-orange-500 rounded-3xl mx-auto mb-6 flex items-center justify-center animate-pulse">
-            <Clock className="w-10 h-10 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">Pending Approval</h1>
-          <p className="text-gray-600">Your registration is being reviewed by the admin. You will be notified once approved.</p>
-        </motion.div>
-      </div>
-    );
-  }
-
   if (!currentMember) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-gray-200 border-t-gray-800 rounded-full animate-spin" /></div>;
 
   const charge = withdrawalCharge(availableBalance, minAmount);

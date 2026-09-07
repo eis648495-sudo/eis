@@ -46,7 +46,7 @@ export default function Register() {
         full_name: form.username,
         referral_code: generateReferralCode(),
         referrer_id: referrerId,
-        status: "pending",
+        status: "approved",
         role: "member",
         tree_level: 0,
       });

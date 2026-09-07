@@ -35,11 +35,6 @@ export default function Login() {
         setBusy(false);
         return;
       }
-      if (member.status === "pending") {
-        toast.error("Your registration is being reviewed by the admin.");
-        setBusy(false);
-        return;
-      }
       saveMemberSession(member.id);
       toast.success(`Welcome back, ${member.full_name}!`);
       nav("/Dashboard");
