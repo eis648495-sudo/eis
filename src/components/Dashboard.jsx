@@ -249,7 +249,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <Button onClick={handleWithdraw} disabled={availableBalance < minAmount || !profileComplete}
-                  className="bg-white text-emerald-700 hover:bg-emerald-50 font-bold text-base px-8 py-4 h-auto rounded-2xl shadow-lg disabled:opacity-50">
+                  className="bg-white text-emerald-700 hover:bg-emerald-50 font-bold text-base px-8 py-4 h-auto rounded-2xl shadow-lg disabled:opacity-100 disabled:text-gray-400">
                   <Wallet className="w-5 h-5 mr-2" /> Withdraw Now
                 </Button>
               )}
@@ -329,7 +329,7 @@ export default function Dashboard() {
             {myRedeemedCodes.length > 0 && (
               <div className="mt-5 border-t border-gray-100 pt-4">
                 <p className="text-sm font-bold text-gray-700 mb-2">Redeemed Codes History</p>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
+                <div className="space-y-2 max-h-[100px] overflow-y-auto">
                   {myRedeemedCodes.map(c => (
                     <div key={c.id} className="flex items-center justify-between bg-teal-50 rounded-lg px-3 py-2">
                       <code className="font-mono text-sm font-bold text-gray-900">{c.code}</code>
