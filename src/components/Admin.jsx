@@ -18,8 +18,7 @@ export default function Admin() {
   const [showPasswords, setShowPasswords] = useState(false);
   const [editMember, setEditMember] = useState(null);
   const [sponsorModal, setSponsorModal] = useState(null);
-  const [newCode, setNewCode] = useState({ amount: "1500", count: "1", description: "", assignedUsername: "" });
-  const [lastGenerated, setLastGenerated] = useState([]);
+  const [newCode, setNewCode] = useState({ count: "1", description: "", assignedUsername: "" });
   const [gcash, setGcash] = useState({ gcash_number: "", gcash_name: "" });
   const [minAmount, setMinAmount] = useState("300");
   const [savingMin, setSavingMin] = useState(false);
@@ -84,21 +83,18 @@ export default function Admin() {
 
   async function generateCodes() {
     const count = parseInt(newCode.count) || 1;
-    const amount = parseFloat(newCode.amount) || 0;
     try {
       const records = [];
       for (let i = 0; i < count; i++) {
         records.push({
           code: "MAINT-" + generateReferralCode(),
-          amount,
           is_used: false,
           description: newCode.description || null,
           assigned_username: newCode.assignedUsername || null,
         });
       }
-      const { data: inserted } = await supabase.from("maintenance_codes").insert(records).select();
+      await supabase.from("maintenance_codes").insert(records);
       toast.success(`${count} code(s) generated!`);
-      setLastGenerated(inserted || records);
       setNewCode({ ...newCode, description: "", assignedUsername: "" });
     } catch { toast.error("Failed to generate codes"); }
   }
@@ -388,40 +384,18 @@ export default function Admin() {
         <div className="space-y-6">
           <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Plus className="w-5 h-5 text-amber-500" /> Generate Maintenance Codes</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div><Label>Amount (₱)</Label><Input type="number" value={newCode.amount} onChange={e => setNewCode({ ...newCode, amount: e.target.value })} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div><Label>Count</Label><Input type="number" value={newCode.count} onChange={e => setNewCode({ ...newCode, count: e.target.value })} /></div>
               <div><Label>Assigned Username</Label><Input value={newCode.assignedUsername} onChange={e => setNewCode({ ...newCode, assignedUsername: e.target.value })} placeholder="optional" /></div>
               <div><Label>Description</Label><Input value={newCode.description} onChange={e => setNewCode({ ...newCode, description: e.target.value })} placeholder="optional" /></div>
             </div>
             <Button onClick={generateCodes} className="mt-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white"><Plus className="w-4 h-4 mr-2" /> Generate Codes</Button>
-            {lastGenerated.length > 0 && (
-              <div className="mt-4 p-4 bg-amber-50 rounded-2xl border border-amber-200">
-                <p className="font-semibold text-amber-900 mb-3 flex items-center gap-2"><Check className="w-4 h-4" /> {lastGenerated.length} code(s) generated — copy and share:</p>
-                <div className="space-y-2">
-                  {lastGenerated.map((c, i) => (
-                    <div key={c.id || i} className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-amber-100">
-                      <code className="flex-1 font-mono font-bold text-gray-900 text-sm">{c.code}</code>
-                      <span className="text-xs text-gray-500">{money(c.amount)}</span>
-                      <button onClick={() => { navigator.clipboard.writeText(c.code); toast.success("Code copied!"); }}
-                        className="p-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 shrink-0" title="Copy code">
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <Button onClick={() => { const all = lastGenerated.map(c => c.code).join("\n"); navigator.clipboard.writeText(all); toast.success("All codes copied!"); }}
-                  size="sm" variant="outline" className="mt-3 border-amber-300 text-amber-700 hover:bg-amber-50">
-                  <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy All Codes
-                </Button>
-              </div>
-            )}
           </div>
           <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead><tr className="border-b border-gray-100">
-                  {["Code", "Amount", "Status", "Used By", "Date", "Actions"].map(h => <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>)}
+                  {["Code", "Status", "Used By", "Date", "Actions"].map(h => <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>)}
                 </tr></thead>
                 <tbody>
                   {codes.slice(0, 100).map(c => {
@@ -429,7 +403,6 @@ export default function Admin() {
                     return (
                       <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50">
                         <td className="px-6 py-4 text-sm font-mono font-bold text-gray-900">{c.code}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{money(c.amount)}</td>
                         <td className="px-6 py-4"><Badge className={c.is_used ? "bg-gray-100 text-gray-500" : "bg-green-100 text-green-700"}>{c.is_used ? "Used" : "Available"}</Badge></td>
                         <td className="px-6 py-4 text-sm text-gray-600">{usedBy?.username || (c.assigned_username ? `@${c.assigned_username}` : "—")}</td>
                         <td className="px-6 py-4 text-sm text-gray-400">{c.used_at ? formatDate(c.used_at, "MMM d, yyyy") : "—"}</td>
