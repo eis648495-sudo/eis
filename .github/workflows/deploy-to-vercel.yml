@@ -4,6 +4,14 @@ on:
   push:
     branches:
       - option-b
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.*'
+      - 'vercel.json'
+      - 'index.html'
 
 jobs:
   deploy:
