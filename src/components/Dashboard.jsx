@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Wallet, ArrowRight, KeyRound, ChevronDown, ChevronUp, Ticket, Clock, AlertCircle, Share2, Check, FileText, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, useCurrentMember, createRecord } from "../lib/useData";
+import { supabase } from "../lib/supabase";
 import { money, formatDate, withdrawalCharge, LEVEL_CONFIG } from "../lib/helpers";
 import { Button, Badge } from "./ui";
 
@@ -67,7 +68,7 @@ export default function Dashboard() {
     setRedeemBusy(true);
     try {
       // Find the code
-      const { data: found, error } = await import("../lib/supabase").then(m => m.supabase)
+      const { data: found, error } = await supabase
         .from("maintenance_codes").select("*").eq("code", code.toUpperCase()).eq("is_used", false).limit(1);
       if (error || !found?.length) {
         toast.error("Invalid or already used code");
@@ -81,7 +82,7 @@ export default function Dashboard() {
         return;
       }
       // Mark code as used
-      await import("../lib/supabase").then(m => m.supabase)
+      await supabase
         .from("maintenance_codes").update({
           is_used: true,
           used_by_member_id: currentMember.id,
@@ -107,16 +108,32 @@ export default function Dashboard() {
   }
 
   async function distributeUplineBonuses(member, allMembers, codeRecord) {
-    const { supabase } = await import("../lib/supabase");
+    // Level 1: bonus goes to direct referrer (who shared the link)
+    const referrer = allMembers.find(m => m.id === member.referrer_id);
+    if (referrer && referrer.status === "approved") {
+      const bonus1 = LEVEL_CONFIG.find(l => l.level === 1)?.bonus_amount || 0;
+      if (bonus1 > 0) {
+        await supabase.from("transactions").insert({
+          member_id: referrer.id,
+          type: "referral_bonus",
+          amount: bonus1,
+          bonus_level: 1,
+          description: `Level 1 bonus from ${member.username}`,
+          status: "completed",
+          from_member_id: member.id,
+        });
+      }
+    }
+    // Levels 2-5: walk up the placement tree (Mamlakah ComPlan)
     let current = member;
-    for (let level = 1; level <= 5; level++) {
-      const referrer = allMembers.find(m => m.id === current.referrer_id);
-      if (!referrer) break;
+    for (let level = 2; level <= 5; level++) {
+      const upline = allMembers.find(m => m.id === current.placement_id);
+      if (!upline || upline.status !== "approved") break;
       const bonus = LEVEL_CONFIG.find(l => l.level === level)?.bonus_amount || 0;
       if (bonus > 0) {
         await supabase.from("transactions").insert({
-          member_id: referrer.id,
-          type: level === 1 ? "referral_bonus" : "level_bonus",
+          member_id: upline.id,
+          type: "level_bonus",
           amount: bonus,
           bonus_level: level,
           description: `Level ${level} bonus from ${member.username}`,
@@ -124,7 +141,7 @@ export default function Dashboard() {
           from_member_id: member.id,
         });
       }
-      current = referrer;
+      current = upline;
     }
   }
 

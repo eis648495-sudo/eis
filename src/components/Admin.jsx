@@ -19,6 +19,7 @@ export default function Admin() {
   const [editMember, setEditMember] = useState(null);
   const [sponsorModal, setSponsorModal] = useState(null);
   const [newCode, setNewCode] = useState({ amount: "1500", count: "1", description: "", assignedUsername: "" });
+  const [lastGenerated, setLastGenerated] = useState([]);
   const [gcash, setGcash] = useState({ gcash_number: "", gcash_name: "" });
   const [minAmount, setMinAmount] = useState("300");
   const [savingMin, setSavingMin] = useState(false);
@@ -95,10 +96,10 @@ export default function Admin() {
           assigned_username: newCode.assignedUsername || null,
         });
       }
-      await supabase.from("maintenance_codes").insert(records);
+      const { data: inserted } = await supabase.from("maintenance_codes").insert(records).select();
       toast.success(`${count} code(s) generated!`);
+      setLastGenerated(inserted || records);
       setNewCode({ ...newCode, description: "", assignedUsername: "" });
-      window.location.reload();
     } catch { toast.error("Failed to generate codes"); }
   }
 
@@ -394,6 +395,27 @@ export default function Admin() {
               <div><Label>Description</Label><Input value={newCode.description} onChange={e => setNewCode({ ...newCode, description: e.target.value })} placeholder="optional" /></div>
             </div>
             <Button onClick={generateCodes} className="mt-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white"><Plus className="w-4 h-4 mr-2" /> Generate Codes</Button>
+            {lastGenerated.length > 0 && (
+              <div className="mt-4 p-4 bg-amber-50 rounded-2xl border border-amber-200">
+                <p className="font-semibold text-amber-900 mb-3 flex items-center gap-2"><Check className="w-4 h-4" /> {lastGenerated.length} code(s) generated — copy and share:</p>
+                <div className="space-y-2">
+                  {lastGenerated.map((c, i) => (
+                    <div key={c.id || i} className="flex items-center gap-2 bg-white rounded-xl px-3 py-2 border border-amber-100">
+                      <code className="flex-1 font-mono font-bold text-gray-900 text-sm">{c.code}</code>
+                      <span className="text-xs text-gray-500">{money(c.amount)}</span>
+                      <button onClick={() => { navigator.clipboard.writeText(c.code); toast.success("Code copied!"); }}
+                        className="p-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 shrink-0" title="Copy code">
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <Button onClick={() => { const all = lastGenerated.map(c => c.code).join("\n"); navigator.clipboard.writeText(all); toast.success("All codes copied!"); }}
+                  size="sm" variant="outline" className="mt-3 border-amber-300 text-amber-700 hover:bg-amber-50">
+                  <Copy className="w-3.5 h-3.5 mr-1.5" /> Copy All Codes
+                </Button>
+              </div>
+            )}
           </div>
           <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
             <div className="overflow-x-auto">
