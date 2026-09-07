@@ -386,7 +386,14 @@ export default function Admin() {
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Plus className="w-5 h-5 text-amber-500" /> Generate Maintenance Codes</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div><Label>Count</Label><Input type="number" value={newCode.count} onChange={e => setNewCode({ ...newCode, count: e.target.value })} /></div>
-              <div><Label>Assigned Username</Label><Input value={newCode.assignedUsername} onChange={e => setNewCode({ ...newCode, assignedUsername: e.target.value })} placeholder="optional" /></div>
+              <div>
+                <Label>Assign To (optional — locks code to this user)</Label>
+                <select value={newCode.assignedUsername} onChange={e => setNewCode({ ...newCode, assignedUsername: e.target.value })}
+                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20">
+                  <option value="">Anyone (no lock)</option>
+                  {activeMembers.map(m => <option key={m.id} value={m.username}>{m.full_name} (@{m.username})</option>)}
+                </select>
+              </div>
               <div><Label>Description</Label><Input value={newCode.description} onChange={e => setNewCode({ ...newCode, description: e.target.value })} placeholder="optional" /></div>
             </div>
             <Button onClick={generateCodes} className="mt-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white"><Plus className="w-4 h-4 mr-2" /> Generate Codes</Button>
@@ -395,7 +402,7 @@ export default function Admin() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead><tr className="border-b border-gray-100">
-                  {["Code", "Status", "Used By", "Date", "Actions"].map(h => <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>)}
+                  {["Code", "Assigned To", "Status", "Used By", "Date", "Actions"].map(h => <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>)}
                 </tr></thead>
                 <tbody>
                   {codes.slice(0, 100).map(c => {
@@ -403,8 +410,9 @@ export default function Admin() {
                     return (
                       <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50">
                         <td className="px-6 py-4 text-sm font-mono font-bold text-gray-900">{c.code}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{c.assigned_username ? `@${c.assigned_username}` : "—"}</td>
                         <td className="px-6 py-4"><Badge className={c.is_used ? "bg-gray-100 text-gray-500" : "bg-green-100 text-green-700"}>{c.is_used ? "Used" : "Available"}</Badge></td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{usedBy?.username || (c.assigned_username ? `@${c.assigned_username}` : "—")}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{usedBy?.username || "—"}</td>
                         <td className="px-6 py-4 text-sm text-gray-400">{c.used_at ? formatDate(c.used_at, "MMM d, yyyy") : "—"}</td>
                         <td className="px-6 py-4">
                           <div className="flex gap-1">
