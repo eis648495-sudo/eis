@@ -14,6 +14,7 @@ export default function Admin() {
   const [minAmount, setMinAmount] = useState("300");
   const [savingMin, setSavingMin] = useState(false);
   const [tabVisibility, setTabVisibility] = useState({ monitoring: true, subadmin: true, terms: true, complan: true });
+  const [showPasswords, setShowPasswords] = useState(false);
 
   const { data: members = [] } = useTable("members");
   const { data: codes = [] } = useTable("maintenance_codes");
@@ -177,16 +178,23 @@ export default function Admin() {
       {/* Members tab */}
       {tab === "members" && (
         <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100">
+            <p className="text-sm font-medium text-gray-700">{members.length} members</p>
+            <Button onClick={() => setShowPasswords(s => !s)} size="sm" variant="outline" className="h-8 px-3 text-xs flex items-center gap-1.5">
+              {showPasswords ? <><EyeOff className="w-3.5 h-3.5" /> Hide Passwords</> : <><Eye className="w-3.5 h-3.5" /> Show Passwords</>}
+            </Button>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead><tr className="border-b border-gray-100">
-                {["Name", "Username", "Role", "Status", "Referral", "Actions"].map(h => <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>)}
+                {["Name", "Username", "Password", "Role", "Status", "Referral", "Actions"].map(h => <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>)}
               </tr></thead>
               <tbody>
                 {members.map(m => (
                   <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{m.full_name}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">@{m.username}</td>
+                    <td className="px-6 py-4 text-sm font-mono text-gray-600">{showPasswords ? (m.password || "—") : "••••••"}</td>
                     <td className="px-6 py-4"><Badge className="bg-gray-100 text-gray-600 capitalize">{m.role}</Badge></td>
                     <td className="px-6 py-4"><Badge className={m.status === "approved" ? "bg-green-100 text-green-700" : m.status === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}>{m.status}</Badge></td>
                     <td className="px-6 py-4 text-sm font-mono text-gray-600">{m.referral_code || "—"}</td>
