@@ -195,7 +195,7 @@ export default function Dashboard() {
       {/* Welcome header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-          Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600">{currentMember.full_name || "Member"}</span>
+          Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600">@{currentMember.username || "Member"}</span>
         </h1>
         <p className="text-gray-500 mt-2">Here's your mamlakah network overview</p>
       </motion.div>
