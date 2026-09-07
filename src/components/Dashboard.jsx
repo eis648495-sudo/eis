@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wallet, ArrowRight, KeyRound, ChevronDown, ChevronUp, Ticket, Clock, AlertCircle, Share2, Check, FileText, Users } from "lucide-react";
+import { Wallet, ArrowRight, KeyRound, ChevronDown, ChevronUp, Ticket, Clock, AlertCircle, Share2, Check, FileText, Users, Timer } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, useCurrentMember, createRecord } from "../lib/useData";
 import { supabase } from "../lib/supabase";
-import { money, formatDate, withdrawalCharge, LEVEL_CONFIG } from "../lib/helpers";
+import { money, formatDate, withdrawalCharge, LEVEL_CONFIG, maintenanceStatus, formatTime } from "../lib/helpers";
 import { Button, Badge } from "./ui";
 
 export default function Dashboard() {
@@ -13,6 +13,13 @@ export default function Dashboard() {
   const [code, setCode] = useState("");
   const [redeemBusy, setRedeemBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [now, setNow] = useState(Date.now());
+
+  // Live countdown timer — ticks every second
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const { data: members = [], isLoading } = useTable("members");
   const { data: allCodes = [] } = useTable("maintenance_codes");
@@ -39,6 +46,22 @@ export default function Dashboard() {
   const withdrawals = myTx.filter(t => t.type === "withdrawal").sort((a, b) => new Date(b.created_date || b.created_at) - new Date(a.created_date || a.created_at));
 
   const profileComplete = currentMember?.gcash_number && currentMember?.gcash_name && currentMember?.phone && currentMember?.address;
+
+  // Maintenance timer status: green = redeemed & active, red = not redeemed or expired
+  const maintStatus = currentMember ? maintenanceStatus(currentMember, allCodes) : { isGreen: false, secondsLeft: 0, neverRedeemed: true };
+  // Recompute secondsLeft live using `now` so the countdown ticks
+  const maintSecondsLeft = (() => {
+    if (maintStatus.neverRedeemed) {
+      const since = new Date(currentMember?.approved_date || currentMember?.created_date || now).getTime();
+      return Math.max(0, 432000 - Math.floor((now - since) / 1000));
+    }
+    const usedCodes = allCodes.filter(c => c.is_used && c.used_by_member_id === currentMember?.id && c.used_at);
+    if (usedCodes.length > 0) {
+      const lastUsed = usedCodes.map(c => new Date(c.used_at).getTime()).sort((a, b) => b - a)[0];
+      return Math.max(0, 432000 - Math.floor((now - lastUsed) / 1000));
+    }
+    return maintStatus.secondsLeft;
+  })();
 
   async function handleWithdraw() {
     if (!profileComplete) {
@@ -96,8 +119,8 @@ export default function Dashboard() {
         description: `Maintenance code redeemed: ${code}`,
         status: "completed",
       });
-      // Distribute upline bonuses
-      await distributeUplineBonuses(currentMember, members, codeRecord);
+      // Distribute upline bonuses (only to uplines with green/active maintenance status)
+      await distributeUplineBonuses(currentMember, members, allCodes, codeRecord);
       toast.success("Code redeemed successfully! Upline bonuses distributed.");
       setCode("");
       window.location.reload();
@@ -107,10 +130,17 @@ export default function Dashboard() {
     setRedeemBusy(false);
   }
 
-  async function distributeUplineBonuses(member, allMembers, codeRecord) {
+  async function distributeUplineBonuses(member, allMembers, allCodes, codeRecord) {
+    // Only uplines with GREEN maintenance status (redeemed & active) can earn bonuses
+    const canEarn = (m) => {
+      if (!m || m.status !== "approved") return false;
+      const status = maintenanceStatus(m, allCodes);
+      return status.isGreen;
+    };
+
     // Level 1: bonus goes to direct referrer (who shared the link)
     const referrer = allMembers.find(m => m.id === member.referrer_id);
-    if (referrer && referrer.status === "approved") {
+    if (canEarn(referrer)) {
       const bonus1 = LEVEL_CONFIG.find(l => l.level === 1)?.bonus_amount || 0;
       if (bonus1 > 0) {
         await supabase.from("transactions").insert({
@@ -128,18 +158,21 @@ export default function Dashboard() {
     let current = member;
     for (let level = 2; level <= 5; level++) {
       const upline = allMembers.find(m => m.id === current.placement_id);
-      if (!upline || upline.status !== "approved") break;
-      const bonus = LEVEL_CONFIG.find(l => l.level === level)?.bonus_amount || 0;
-      if (bonus > 0) {
-        await supabase.from("transactions").insert({
-          member_id: upline.id,
-          type: "level_bonus",
-          amount: bonus,
-          bonus_level: level,
-          description: `Level ${level} bonus from ${member.username}`,
-          status: "completed",
-          from_member_id: member.id,
-        });
+      if (!upline) break;
+      // Skip uplines who haven't redeemed (red banner) — they don't earn
+      if (canEarn(upline)) {
+        const bonus = LEVEL_CONFIG.find(l => l.level === level)?.bonus_amount || 0;
+        if (bonus > 0) {
+          await supabase.from("transactions").insert({
+            member_id: upline.id,
+            type: "level_bonus",
+            amount: bonus,
+            bonus_level: level,
+            description: `Level ${level} bonus from ${member.username}`,
+            status: "completed",
+            from_member_id: member.id,
+          });
+        }
       }
       current = upline;
     }
@@ -201,11 +234,40 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Welcome header */}
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
           Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600">{currentMember.full_name || "Member"}</span>
         </h1>
         <p className="text-gray-500 mt-2">Here's your mamlakah network overview</p>
+      </motion.div>
+
+      {/* Maintenance timer banner — RED if not redeemed, GREEN if redeemed & active */}
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+        <div className={`rounded-2xl p-5 shadow-lg flex items-center gap-4 ${
+          maintStatus.isGreen
+            ? "bg-gradient-to-r from-emerald-500 to-teal-600"
+            : "bg-gradient-to-r from-red-500 to-rose-600"
+        }`}>
+          <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+            <Timer className="w-7 h-7 text-white" />
+          </div>
+          <div className="flex-1">
+            <p className="text-white font-bold text-lg">
+              {maintStatus.isGreen ? "✅ Maintenance Active" : maintSecondsLeft > 0 ? "⚠️ Maintenance Required" : "⛔ Expired — Redeem Now"}
+            </p>
+            <p className="text-white/80 text-sm">
+              {maintStatus.isGreen
+                ? "You are earning from your downlines. Redeem again before timer expires."
+                : maintStatus.neverRedeemed
+                  ? "Redeem a maintenance code to activate your account and start earning."
+                  : "Your maintenance has expired. Redeem a code to resume earning."}
+            </p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-white/70 text-xs uppercase font-semibold">Time Remaining</p>
+            <p className="text-white font-extrabold text-2xl font-mono tracking-tight">{formatTime(maintSecondsLeft)}</p>
+          </div>
+        </div>
       </motion.div>
 
       {/* Balance card + Maintenance code */}
