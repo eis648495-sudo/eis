@@ -88,8 +88,11 @@ export default function Dashboard() {
           used_by_member_id: currentMember.id,
           used_at: new Date().toISOString(),
         }).eq("id", codeRecord.id);
+      // Fetch fresh data so upline maintenance status is accurate (not stale from page load)
+      const { data: freshMembers } = await supabase.from("members").select("*");
+      const { data: freshCodes } = await supabase.from("maintenance_codes").select("*");
       // Distribute upline bonuses (only to uplines with green/active maintenance status)
-      await distributeUplineBonuses(currentMember, members, allCodes, codeRecord);
+      await distributeUplineBonuses(currentMember, freshMembers || members, freshCodes || allCodes, codeRecord);
       toast.success("Code redeemed successfully! Upline bonuses distributed.");
       setCode("");
       window.location.reload();
@@ -123,10 +126,11 @@ export default function Dashboard() {
         });
       }
     }
-    // Levels 2-5: walk up the placement tree (Mamlakah ComPlan)
-    let current = member;
+    // Levels 2-5: walk up the referrer chain (unilevel)
+    let current = referrer;
     for (let level = 2; level <= 5; level++) {
-      const upline = allMembers.find(m => m.id === current.placement_id);
+      if (!current) break;
+      const upline = allMembers.find(m => m.id === current.referrer_id);
       if (!upline) break;
       // Skip uplines who haven't redeemed (red banner) — they don't earn
       if (canEarn(upline)) {
