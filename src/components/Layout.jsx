@@ -119,7 +119,7 @@ export default function Layout({ children, currentPageName }) {
             <div className="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white font-bold">
               {(member?.username || "U").charAt(0).toUpperCase()}
             </div>
-            <p className="font-medium text-gray-900 truncate flex-1">@{member?.username || "Member"}</p>
+            <p className="font-medium text-gray-900 truncate flex-1">{member?.username || "Member"}</p>
           </div>
           <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-gray-600 hover:text-red-600 hover:bg-red-50 font-medium transition-all">
             <LogOut className="w-4 h-4" /> Logout
@@ -163,7 +163,7 @@ export default function Layout({ children, currentPageName }) {
                   <div className="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white font-bold">
                     {(member?.username || "U").charAt(0).toUpperCase()}
                   </div>
-                  <p className="font-medium text-gray-900 truncate flex-1">@{member?.username || "Member"}</p>
+                  <p className="font-medium text-gray-900 truncate flex-1">{member?.username || "Member"}</p>
                 </div>
                 <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-3 rounded-xl text-gray-600 hover:text-red-600 hover:bg-red-50 font-bold transition-all">
                   <LogOut className="w-4 h-4" /> Logout

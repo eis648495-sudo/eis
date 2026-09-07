@@ -110,8 +110,19 @@ export default function Admin() {
   }
 
   async function approveWithdrawal(id) {
-    try { await updateRecord("conversion_requests", id, { status: "approved" }); toast.success("Withdrawal approved"); window.location.reload(); }
-    catch { toast.error("Failed to approve"); }
+    try {
+      const req = withdrawals.find(w => w.id === id);
+      await updateRecord("conversion_requests", id, { status: "approved" });
+      await createRecord("transactions", {
+        member_id: req.member_id,
+        type: "withdrawal",
+        amount: -(req.amount || 0),
+        status: "completed",
+        description: "Withdrawal approved by admin",
+      });
+      toast.success("Withdrawal approved & balance deducted");
+      window.location.reload();
+    } catch { toast.error("Failed to approve"); }
   }
 
   async function rejectWithdrawal(id) {

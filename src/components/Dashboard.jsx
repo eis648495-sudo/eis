@@ -37,6 +37,7 @@ export default function Dashboard() {
 
   const pendingWithdrawal = conversionReqs.find(r => r.member_id === currentMember?.id && r.status === "pending");
   const withdrawals = myTx.filter(t => t.type === "withdrawal").sort((a, b) => new Date(b.created_date || b.created_at) - new Date(a.created_date || a.created_at));
+  const myRedeemedCodes = allCodes.filter(c => c.is_used && c.used_by_member_id === currentMember?.id).sort((a, b) => new Date(b.used_at) - new Date(a.used_at));
 
   const profileComplete = currentMember?.gcash_number && currentMember?.gcash_name && currentMember?.phone && currentMember?.address;
 
@@ -88,6 +89,14 @@ export default function Dashboard() {
           used_by_member_id: currentMember.id,
           used_at: new Date().toISOString(),
         }).eq("id", codeRecord.id);
+      // Record redemption as a transaction
+      await supabase.from("transactions").insert({
+        member_id: currentMember.id,
+        type: "maintenance_code",
+        amount: 0,
+        description: `Redeemed maintenance code: ${codeRecord.code}`,
+        status: "completed",
+      });
       // Fetch fresh data so upline maintenance status is accurate (not stale from page load)
       const { data: freshMembers } = await supabase.from("members").select("*");
       const { data: freshCodes } = await supabase.from("maintenance_codes").select("*");
@@ -195,7 +204,7 @@ export default function Dashboard() {
       {/* Welcome header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-          Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600">@{currentMember.username || "Member"}</span>
+          Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600">{currentMember.username || "Member"}</span>
         </h1>
         <p className="text-gray-500 mt-2">Here's your mamlakah network overview</p>
       </motion.div>
@@ -240,8 +249,8 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <Button onClick={handleWithdraw} disabled={availableBalance < minAmount || !profileComplete}
-                  className="bg-white text-emerald-700 hover:bg-emerald-50 font-bold px-6 py-3 h-auto rounded-2xl shadow-lg disabled:opacity-50">
-                  <Wallet className="w-4 h-4 mr-2" /> Withdraw (−{money(charge)} charge)
+                  className="bg-white text-emerald-700 hover:bg-emerald-50 font-bold text-base px-8 py-4 h-auto rounded-2xl shadow-lg disabled:opacity-50">
+                  <Wallet className="w-5 h-5 mr-2" /> Withdraw Now
                 </Button>
               )}
               <Button onClick={() => setShowHistory(!showHistory)} variant="ghost"
@@ -317,6 +326,19 @@ export default function Dashboard() {
                 <KeyRound className="w-4 h-4 mr-2" /> {redeemBusy ? "Redeeming..." : "Redeem Code"}
               </Button>
             </form>
+            {myRedeemedCodes.length > 0 && (
+              <div className="mt-5 border-t border-gray-100 pt-4">
+                <p className="text-sm font-bold text-gray-700 mb-2">Redeemed Codes History</p>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {myRedeemedCodes.map(c => (
+                    <div key={c.id} className="flex items-center justify-between bg-teal-50 rounded-lg px-3 py-2">
+                      <code className="font-mono text-sm font-bold text-gray-900">{c.code}</code>
+                      <span className="text-xs text-gray-500">{formatDate(c.used_at, "MMM d, yyyy")}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
