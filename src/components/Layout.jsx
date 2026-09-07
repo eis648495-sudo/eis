@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LayoutDashboard, GitBranch, Users, Wallet, Layers, User, Shield, LogOut, Menu, X, ChevronRight } from "lucide-react";
 import { useTable, useCurrentMember } from "../lib/useData";
 import { clearMemberSession, getSessionMemberId } from "../lib/auth";
+import { supabase } from "../lib/supabase";
 import { MaintenanceBanner } from "./MaintenanceBanner";
 import { GCashButton } from "./GCashButton";
 
@@ -29,9 +30,20 @@ export default function Layout({ children, currentPageName }) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: members = [] } = useTable("members");
-  const { data: settings = [] } = useTable("system_settings");
+  const { data: settings = [], refetch: refetchSettings } = useTable("system_settings");
   const memberId = getSessionMemberId();
   const member = memberId ? members.find(m => m.id === memberId) : null;
+
+  // Real-time update: refetch settings when system_settings changes (e.g. admin toggles tab visibility)
+  useEffect(() => {
+    const channel = supabase
+      .channel("system_settings_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "system_settings" }, () => refetchSettings())
+      .subscribe();
+    // Polling fallback in case realtime is not enabled
+    const interval = setInterval(() => refetchSettings(), 3000);
+    return () => { supabase.removeChannel(channel); clearInterval(interval); };
+  }, [refetchSettings]);
 
   const settingsMap = {};
   settings.forEach(s => { settingsMap[s.setting_key] = s.setting_value; });
@@ -43,8 +55,8 @@ export default function Layout({ children, currentPageName }) {
   const isSubAdmin = member?.role === "sub_admin";
 
   let items = NAV_ITEMS.filter(item => {
-    if (item.path === "Monitoring") return isAdmin || showMonitoring;
-    if (item.path === "LevelBonuses") return isAdmin || showComPlan;
+    if (item.path === "Monitoring") return showMonitoring;
+    if (item.path === "LevelBonuses") return showComPlan;
     return true;
   });
   if (isAdmin) items = [...items, ...ADMIN_ITEMS];
