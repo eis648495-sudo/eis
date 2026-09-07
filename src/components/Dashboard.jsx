@@ -88,14 +88,6 @@ export default function Dashboard() {
           used_by_member_id: currentMember.id,
           used_at: new Date().toISOString(),
         }).eq("id", codeRecord.id);
-      // Create adjustment transaction
-      await createRecord("transactions", {
-        member_id: currentMember.id,
-        type: "adjustment",
-        amount: codeRecord.amount || 0,
-        description: `Maintenance code redeemed: ${code}`,
-        status: "completed",
-      });
       // Distribute upline bonuses (only to uplines with green/active maintenance status)
       await distributeUplineBonuses(currentMember, members, allCodes, codeRecord);
       toast.success("Code redeemed successfully! Upline bonuses distributed.");
