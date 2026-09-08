@@ -66,7 +66,7 @@ export default function Admin() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch signed URLs for receipt images (storage bucket is private)
+  // Resolve receipt image URLs — data URLs are used directly, storage paths get signed URLs
   useEffect(() => {
     if (receipts.length === 0) return;
     let cancelled = false;
@@ -74,8 +74,10 @@ export default function Admin() {
       const urls = {};
       for (const r of receipts) {
         if (!r.receipt_url) continue;
-        if (r.receipt_url.startsWith("http")) { urls[r.id] = r.receipt_url; continue; }
-        // Use the receipt_url as-is — it's the path within the "receipts" bucket
+        if (r.receipt_url.startsWith("data:") || r.receipt_url.startsWith("http")) {
+          urls[r.id] = r.receipt_url;
+          continue;
+        }
         const { data } = await supabase.storage.from("receipts").createSignedUrl(r.receipt_url, 3600);
         if (data?.signedUrl) urls[r.id] = data.signedUrl;
       }

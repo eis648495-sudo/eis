@@ -29,21 +29,12 @@ export function GCashButton() {
     if (!file) return;
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop();
-      const fileName = `${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("receipts").upload(fileName, file);
-      let receiptUrl = fileName;
-      if (upErr) {
-        // Fallback: try with "receipts/" prefix for buckets that need it
-        const altName = `receipts/${Date.now()}.${ext}`;
-        const { error: upErr2 } = await supabase.storage.from("receipts").upload(altName, file);
-        if (!upErr2) receiptUrl = altName;
-      }
-      const memberName = "";
+      // Convert image to compressed base64 data URL (no storage bucket needed)
+      const dataUrl = await compressImage(file, 1200, 0.8);
       await supabase.from("gcash_receipts").insert({
         member_id: memberId,
-        member_name: memberName,
-        receipt_url: receiptUrl,
+        member_name: "",
+        receipt_url: dataUrl,
         status: "pending",
       });
       toast.success("Receipt uploaded successfully!");
@@ -51,6 +42,38 @@ export function GCashButton() {
       toast.error("Failed to upload receipt");
     }
     setUploading(false);
+    e.target.value = "";
+  }
+
+  function compressImage(file, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
   return (
