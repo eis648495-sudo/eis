@@ -35,6 +35,8 @@ export default function Admin() {
   const [txSearch, setTxSearch] = useState("");
   const [tabVisibility, setTabVisibility] = useState({ monitoring: true, subadmin: true, terms: true, complan: true });
   const [monitorMember, setMonitorMember] = useState(null);
+  const [previewReceipt, setPreviewReceipt] = useState(null);
+  const [signedUrls, setSignedUrls] = useState({});
   const [, setTick] = useState(0);
 
   const { data: members = [] } = useTable("members");
@@ -63,6 +65,24 @@ export default function Admin() {
     const interval = setInterval(() => setTick(t => t + 1), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch signed URLs for receipt images (storage bucket is private)
+  useEffect(() => {
+    if (receipts.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const urls = {};
+      for (const r of receipts) {
+        if (!r.receipt_url) continue;
+        if (r.receipt_url.startsWith("http")) { urls[r.id] = r.receipt_url; continue; }
+        // Use the receipt_url as-is — it's the path within the "receipts" bucket
+        const { data } = await supabase.storage.from("receipts").createSignedUrl(r.receipt_url, 3600);
+        if (data?.signedUrl) urls[r.id] = data.signedUrl;
+      }
+      if (!cancelled) setSignedUrls(urls);
+    })();
+    return () => { cancelled = true; };
+  }, [receipts]);
 
   const activeGcash = gcashInfo.find(g => g.is_active) || gcashInfo[0];
   const pendingWithdrawals = withdrawals.filter(w => w.status === "pending");
@@ -794,14 +814,21 @@ export default function Admin() {
                   const date = r.created_at || r.created_date;
                   return (
                     <div key={r.id} className="flex items-start gap-4 p-4 rounded-2xl border border-gray-100 hover:bg-gray-50 transition-colors">
-                      {/* Receipt thumbnail */}
-                      <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
-                        {receiptUrl(r) ? (
-                          <img src={receiptUrl(r)} alt="Receipt" className="w-full h-full object-cover" />
+                      {/* Receipt thumbnail — click to view full size */}
+                      <button
+                        onClick={() => setPreviewReceipt(r)}
+                        className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all relative group"
+                        title="Click to view receipt"
+                      >
+                        {signedUrls[r.id] ? (
+                          <img src={signedUrls[r.id]} alt="Receipt" className="w-full h-full object-cover" />
                         ) : (
                           <ImageIcon className="w-8 h-8 text-gray-300" />
                         )}
-                      </div>
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </button>
                       {/* Receipt info */}
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-gray-900">{name}</p>
@@ -1166,6 +1193,74 @@ export default function Admin() {
                 <Button onClick={() => changeSponsor(sponsorModal.member.id, sponsorModal.newSponsorId)} className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 text-white">Update Sponsor</Button>
                 <Button onClick={() => setSponsorModal(null)} variant="outline" className="flex-1">Cancel</Button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Receipt Preview Modal */}
+      <AnimatePresence>
+        {previewReceipt && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+            onClick={() => setPreviewReceipt(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">
+                    {members.find(m => m.id === previewReceipt.member_id)?.full_name || previewReceipt.member_name || "Receipt"}
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    {previewReceipt.created_at ? new Date(previewReceipt.created_at).toLocaleString("en-PH") : "—"}
+                  </p>
+                </div>
+                <button onClick={() => setPreviewReceipt(null)} className="p-1 rounded-lg hover:bg-gray-100">
+                  <XIcon className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+              <div className="p-4 flex items-center justify-center bg-gray-50 min-h-[300px] max-h-[70vh] overflow-auto">
+                {signedUrls[previewReceipt.id] ? (
+                  <img
+                    src={signedUrls[previewReceipt.id]}
+                    alt="Receipt"
+                    className="max-w-full max-h-[60vh] rounded-xl object-contain"
+                    onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                  />
+                ) : null}
+                <div className="flex flex-col items-center text-gray-400" style={{ display: signedUrls[previewReceipt.id] ? 'none' : 'flex' }}>
+                  <ImageIcon className="w-12 h-12 mb-2" />
+                  <p className="text-sm">No image available for this receipt.</p>
+                </div>
+              </div>
+              {previewReceipt.status === "pending" && (
+                <div className="p-4 border-t border-gray-100 flex gap-3 justify-end">
+                  <Button
+                    onClick={() => { verifyReceipt(previewReceipt.id); setPreviewReceipt(null); }}
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Check className="w-4 h-4 mr-1" /> Verify
+                  </Button>
+                  <Button
+                    onClick={() => { rejectReceipt(previewReceipt.id); setPreviewReceipt(null); }}
+                    size="sm"
+                    variant="outline"
+                    className="border-red-200 text-red-600 hover:bg-red-50"
+                  >
+                    <X className="w-4 h-4 mr-1" /> Reject
+                  </Button>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

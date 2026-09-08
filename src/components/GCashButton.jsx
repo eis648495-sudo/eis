@@ -33,9 +33,11 @@ export function GCashButton() {
       const fileName = `${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("receipts").upload(fileName, file);
       let receiptUrl = fileName;
-      if (!upErr) {
-        const { data: urlData } = supabase.storage.from("receipts").getPublicUrl(fileName);
-        receiptUrl = urlData.publicUrl;
+      if (upErr) {
+        // Fallback: try with "receipts/" prefix for buckets that need it
+        const altName = `receipts/${Date.now()}.${ext}`;
+        const { error: upErr2 } = await supabase.storage.from("receipts").upload(altName, file);
+        if (!upErr2) receiptUrl = altName;
       }
       const memberName = "";
       await supabase.from("gcash_receipts").insert({
