@@ -14,9 +14,10 @@ import LevelBonuses from "./components/LevelBonuses";
 import Profile from "./components/Profile";
 import Admin from "./components/Admin";
 import SubAdmin from "./components/SubAdmin";
+import SupAdmin from "./components/SupAdmin";
 
 const PAGES = {
-  Dashboard, Genealogy, Earnings, Monitoring, LevelBonuses, Profile, Admin, SubAdmin,
+  Dashboard, Genealogy, Earnings, Monitoring, LevelBonuses, Profile, Admin, SubAdmin, SupAdmin,
 };
 
 function PageRouter() {

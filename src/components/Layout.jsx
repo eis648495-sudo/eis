@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { LayoutDashboard, GitBranch, Users, Wallet, Layers, User, Shield, LogOut, Menu, X, ChevronRight } from "lucide-react";
+import { LayoutDashboard, GitBranch, Users, Wallet, Layers, User, Shield, Crown, LogOut, Menu, X, ChevronRight } from "lucide-react";
 import { useTable, useCurrentMember } from "../lib/useData";
 import { clearMemberSession, getSessionMemberId } from "../lib/auth";
 import { supabase } from "../lib/supabase";
@@ -20,6 +20,7 @@ const NAV_ITEMS = [
 ];
 const ADMIN_ITEMS = [{ name: "Admin Panel", icon: Shield, path: "Admin" }];
 const SUBADMIN_ITEMS = [{ name: "Sub-Admin Panel", icon: Shield, path: "SubAdmin" }];
+const SUPADMIN_ITEMS = [{ name: "Super Admin", icon: Crown, path: "SupAdmin" }];
 
 function navPath(path) {
   return "/" + path;
@@ -53,6 +54,7 @@ export default function Layout({ children, currentPageName }) {
 
   const isAdmin = member?.role === "admin";
   const isSubAdmin = member?.role === "sub_admin";
+  const isSupAdmin = member?.role === "supadmin";
 
   let items = NAV_ITEMS.filter(item => {
     if (item.path === "Monitoring") return showMonitoring;
@@ -61,6 +63,7 @@ export default function Layout({ children, currentPageName }) {
   });
   if (isAdmin) items = [...items, ...ADMIN_ITEMS];
   if (isSubAdmin) items = [...items, ...SUBADMIN_ITEMS];
+  if (isSupAdmin) items = [...items, ...SUPADMIN_ITEMS];
   if (isAdmin || showSubAdmin) {
     if (!isSubAdmin && !isAdmin) {
       // no sub-admin for regular members
