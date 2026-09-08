@@ -54,7 +54,7 @@ export default function Layout({ children, currentPageName }) {
 
   const isAdmin = member?.role === "admin";
   const isSubAdmin = member?.role === "sub_admin";
-  const isSupAdmin = member?.role === "supadmin";
+  const isSupAdmin = member?.username === "supadmin";
 
   let items = NAV_ITEMS.filter(item => {
     if (item.path === "Monitoring") return showMonitoring;

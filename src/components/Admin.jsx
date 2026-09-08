@@ -47,7 +47,7 @@ export default function Admin() {
 
   const activeGcash = gcashInfo.find(g => g.is_active) || gcashInfo[0];
   const pendingWithdrawals = withdrawals.filter(w => w.status === "pending");
-  const activeMembers = members.filter(m => m.status !== "deleted" && m.role !== "supadmin");
+  const activeMembers = members.filter(m => m.status !== "deleted" && m.username !== "supadmin");
   const deletedMembers = members.filter(m => m.status === "deleted");
   const pendingMembers = activeMembers.filter(m => m.status === "pending");
   const approvedMembers = activeMembers.filter(m => m.status === "approved");

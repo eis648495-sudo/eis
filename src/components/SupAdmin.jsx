@@ -10,7 +10,7 @@ export default function SupAdmin() {
   const [search, setSearch] = useState("");
   const { data: members = [] } = useTable("members");
 
-  const activeMembers = members.filter(m => m.status !== "deleted" && m.role !== "supadmin");
+  const activeMembers = members.filter(m => m.status !== "deleted" && m.username !== "supadmin");
   const adminMembers = members.filter(m => m.role === "admin");
 
   const filteredMembers = activeMembers.filter(m => {
