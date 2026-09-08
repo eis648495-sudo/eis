@@ -1005,6 +1005,13 @@ export default function Admin() {
                 <button onClick={() => setEditMember(null)} className="p-1 rounded-lg hover:bg-gray-100"><XIcon className="w-5 h-5 text-gray-400" /></button>
               </div>
               <div className="p-6 space-y-4">
+                <div>
+                  <Label>Username</Label>
+                  <div className="flex items-center gap-2">
+                    <Input value={editMember.username || ""} readOnly className="bg-gray-50 text-gray-500 cursor-not-allowed" />
+                    <button onClick={() => { navigator.clipboard.writeText(editMember.username || ""); toast.success("Username copied!"); }} className="p-2.5 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors flex-shrink-0" title="Copy username"><Copy className="w-4 h-4" /></button>
+                  </div>
+                </div>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                   <p className="text-xs font-bold text-orange-600 uppercase tracking-wide mb-1">Current Password</p>
                   <p className="text-lg font-bold text-gray-900">{editMember.password || "—"}</p>
