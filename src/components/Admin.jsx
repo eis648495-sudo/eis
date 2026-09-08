@@ -5,6 +5,7 @@ import {
   Eye, EyeOff, DollarSign, Trash2, RotateCcw, UserCog, GitBranch, Search,
   Download, Copy, Crown, ArrowRight, ChevronDown, X as XIcon, FileText,
   Key, Clock, Lock, Pencil, User, Save, Upload, Image as ImageIcon,
+  UserPlus, ArrowLeft,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, updateRecord, createRecord, deleteRecord } from "../lib/useData";
@@ -38,6 +39,10 @@ export default function Admin() {
   const [previewReceipt, setPreviewReceipt] = useState(null);
   const [signedUrls, setSignedUrls] = useState({});
   const [, setTick] = useState(0);
+  const [subAdminSearch, setSubAdminSearch] = useState("");
+  const [transferSubAdminId, setTransferSubAdminId] = useState("");
+  const [transferCodeCount, setTransferCodeCount] = useState("1");
+  const [transferring, setTransferring] = useState(false);
 
   const { data: members = [] } = useTable("members");
   const { data: codes = [] } = useTable("maintenance_codes");
@@ -345,6 +350,26 @@ export default function Admin() {
   async function setRole(id, role) {
     try { await updateRecord("members", id, { role }); toast.success(role === "member" ? "Role removed" : `Promoted to ${role}`); window.location.reload(); }
     catch { toast.error("Failed to update role"); }
+  }
+
+  async function transferCodesToSubAdmin() {
+    if (!transferSubAdminId) { toast.error("Select a sub-admin first"); return; }
+    const count = parseInt(transferCodeCount) || 0;
+    if (count < 1) { toast.error("Enter a valid count"); return; }
+    setTransferring(true);
+    try {
+      const availableCodes = codes.filter(c => !c.is_used && !c.assigned_sub_admin_id && !c.assigned_username);
+      if (availableCodes.length < count) { toast.error(`Only ${availableCodes.length} unassigned codes available`); setTransferring(false); return; }
+      const toTransfer = availableCodes.slice(0, count);
+      for (const c of toTransfer) {
+        await supabase.from("maintenance_codes").update({ assigned_sub_admin_id: transferSubAdminId }).eq("id", c.id);
+      }
+      toast.success(`${count} code(s) transferred to ${subAdminMembers.find(sa => sa.id === transferSubAdminId)?.full_name || "sub-admin"}`);
+      setTransferSubAdminId("");
+      setTransferCodeCount("1");
+      window.location.reload();
+    } catch { toast.error("Failed to transfer codes"); }
+    setTransferring(false);
   }
 
   async function saveGcash() {
@@ -923,44 +948,145 @@ export default function Admin() {
       {/* Sub-Admins Tab */}
       {tab === "subadmins" && (
         <div className="space-y-6">
-          {subAdminMembers.length === 0 ? (
-            <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-12 text-center">
-              <Shield className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-400">No sub-admins yet. Promote a member from the Roles tab above.</p>
+          {/* Sub-Admin Role Management */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden border-t-4 border-t-purple-500">
+            <div className="p-5 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Shield className="w-5 h-5 text-purple-500" /> Sub-Admin Role Management
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">Promote approved members to sub-admin so they can redeem codes for users and manage their assigned users.</p>
             </div>
-          ) : subAdminMembers.map(sa => {
-            const assignedCodes = codes.filter(c => c.assigned_sub_admin_id === sa.id);
-            const unusedCodes = assignedCodes.filter(c => !c.is_used);
-            const managedMembers = approvedMembers.filter(m => m.referrer_id === sa.id);
-            return (
-              <div key={sa.id} className="bg-white rounded-2xl border border-gray-100 shadow overflow-hidden">
-                <div className="p-4 border-b border-gray-100 bg-amber-50 flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-gray-900">{sa.full_name}</p>
-                    <p className="text-xs text-gray-500">@{sa.username}</p>
-                  </div>
-                  <div className="flex gap-4 text-sm">
-                    <span className="text-gray-600"><strong>{assignedCodes.length}</strong> codes</span>
-                    <span className="text-gray-600"><strong>{unusedCodes.length}</strong> unused</span>
-                    <span className="text-gray-600"><strong>{managedMembers.length}</strong> members</span>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Managed Members</p>
-                  {managedMembers.length === 0 ? <p className="text-sm text-gray-400">No members managed</p> : (
-                    <div className="space-y-1">
-                      {managedMembers.map(mm => (
-                        <div key={mm.id} className="flex items-center justify-between text-sm py-1">
-                          <span className="text-gray-700">{mm.full_name} <span className="text-gray-400">@{mm.username}</span></span>
-                          <Badge className={mm.status === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>{mm.status}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+            <div className="p-5">
+              {/* Search */}
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input value={subAdminSearch} onChange={e => setSubAdminSearch(e.target.value)} placeholder="Search members by name, email, or username..." className="pl-10" />
               </div>
-            );
-          })}
+              {/* Member list */}
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {approvedMembers.filter(m => {
+                  if (m.role === "admin") return false;
+                  if (!subAdminSearch) return true;
+                  const q = subAdminSearch.toLowerCase();
+                  return (m.full_name || "").toLowerCase().includes(q) || (m.username || "").toLowerCase().includes(q) || (m.email || "").toLowerCase().includes(q);
+                }).map(m => (
+                  <div key={m.id} className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                    <div className="min-w-0">
+                      <p className="font-bold text-gray-900 truncate">{m.username}</p>
+                      <p className="text-sm text-gray-400 truncate">
+                        {m.role === "sub_admin" ? "Sub-Admin" : "Member"}{m.email ? ` · ${m.email}` : ""}{m.full_name ? ` · ${m.full_name}` : ""}
+                      </p>
+                    </div>
+                    {m.role === "sub_admin" ? (
+                      <Button onClick={() => setRole(m.id, "member")} size="sm" variant="outline" className="border-amber-200 text-amber-600 hover:bg-amber-50 h-9 px-4 text-xs whitespace-nowrap">
+                        <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Remove
+                      </Button>
+                    ) : (
+                      <Button onClick={() => setRole(m.id, "sub_admin")} size="sm" className="bg-gradient-to-r from-amber-500 to-orange-600 text-white h-9 px-4 text-xs whitespace-nowrap">
+                        <UserPlus className="w-3.5 h-3.5 mr-1.5" /> Make Sub-Admin
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {approvedMembers.filter(m => {
+                  if (m.role === "admin") return false;
+                  if (!subAdminSearch) return true;
+                  const q = subAdminSearch.toLowerCase();
+                  return (m.full_name || "").toLowerCase().includes(q) || (m.username || "").toLowerCase().includes(q) || (m.email || "").toLowerCase().includes(q);
+                }).length === 0 && (
+                  <p className="text-center py-8 text-gray-400">No members found.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Transfer Maintenance Codes to Sub-Admin */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden border-t-4 border-t-teal-500">
+            <div className="p-5 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Key className="w-5 h-5 text-teal-500" /> Transfer Maintenance Codes to Sub-Admin
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">Transfer unused codes to a sub-admin. Only that sub-admin can redeem them for users.</p>
+            </div>
+            <div className="p-5">
+              {subAdminMembers.length === 0 ? (
+                <div className="text-center py-8">
+                  <Key className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-400">No sub-admins yet. Promote a member above first.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Sub-Admin selector */}
+                  <div>
+                    <Label>Select Sub-Admin</Label>
+                    <select value={transferSubAdminId} onChange={e => setTransferSubAdminId(e.target.value)}
+                      className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 bg-white">
+                      <option value="">Select a sub-admin</option>
+                      {subAdminMembers.map(sa => {
+                        const assignedCodes = codes.filter(c => c.assigned_sub_admin_id === sa.id);
+                        const unusedCount = assignedCodes.filter(c => !c.is_used).length;
+                        return (
+                          <option key={sa.id} value={sa.id}>{sa.full_name} (@{sa.username}) — {unusedCount} unused codes</option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                  {/* Code count */}
+                  <div>
+                    <Label>Number of Codes to Transfer</Label>
+                    <Input type="number" value={transferCodeCount} onChange={e => setTransferCodeCount(e.target.value)} placeholder="e.g. 5" />
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    {codes.filter(c => !c.is_used && !c.assigned_sub_admin_id && !c.assigned_username).length} unassigned codes available.
+                  </p>
+                  <Button onClick={transferCodesToSubAdmin} disabled={transferring || !transferSubAdminId}
+                    className="bg-gradient-to-r from-teal-500 to-emerald-600 text-white">
+                    <ArrowRight className="w-4 h-4 mr-2" /> {transferring ? "Transferring..." : "Transfer Codes"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Existing Sub-Admin Overview */}
+          {subAdminMembers.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase">Current Sub-Admins</h3>
+              {subAdminMembers.map(sa => {
+                const assignedCodes = codes.filter(c => c.assigned_sub_admin_id === sa.id);
+                const unusedCodes = assignedCodes.filter(c => !c.is_used);
+                const managedMembers = approvedMembers.filter(m => m.referrer_id === sa.id);
+                return (
+                  <div key={sa.id} className="bg-white rounded-2xl border border-gray-100 shadow overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 bg-amber-50 flex items-center justify-between">
+                      <div>
+                        <p className="font-bold text-gray-900">{sa.full_name}</p>
+                        <p className="text-xs text-gray-500">@{sa.username}</p>
+                      </div>
+                      <div className="flex gap-4 text-sm">
+                        <span className="text-gray-600"><strong>{assignedCodes.length}</strong> codes</span>
+                        <span className="text-gray-600"><strong>{unusedCodes.length}</strong> unused</span>
+                        <span className="text-gray-600"><strong>{managedMembers.length}</strong> members</span>
+                      </div>
+                    </div>
+                    {managedMembers.length > 0 && (
+                      <div className="p-4">
+                        <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Managed Members</p>
+                        <div className="space-y-1">
+                          {managedMembers.map(mm => (
+                            <div key={mm.id} className="flex items-center justify-between text-sm py-1">
+                              <span className="text-gray-700">{mm.full_name} <span className="text-gray-400">@{mm.username}</span></span>
+                              <Badge className={mm.status === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>{mm.status}</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
