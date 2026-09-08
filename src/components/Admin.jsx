@@ -12,6 +12,7 @@ import { supabase } from "../lib/supabase";
 import { money, formatDate, generateReferralCode, maintenanceStatus, formatTime, LEVEL_CONFIG } from "../lib/helpers";
 import { Button, Input, Label, Badge } from "./ui";
 import Genealogy from "./Genealogy";
+import MonitoringView from "./MonitoringView";
 
 export default function Admin() {
   const [tab, setTab] = useState("members");
@@ -33,6 +34,7 @@ export default function Admin() {
   const [savingMin, setSavingMin] = useState(false);
   const [txSearch, setTxSearch] = useState("");
   const [tabVisibility, setTabVisibility] = useState({ monitoring: true, subadmin: true, terms: true, complan: true });
+  const [monitorMember, setMonitorMember] = useState(null);
   const [, setTick] = useState(0);
 
   const { data: members = [] } = useTable("members");
@@ -692,36 +694,36 @@ export default function Admin() {
 
       {/* Monitoring Tab */}
       {tab === "monitoring" && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold text-gray-900">Downline Monitoring</h2>
-          <p className="text-gray-500 text-sm">Track each 1st-level downline's maintenance-code redemptions, cycle by cycle.</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {approvedMembers.map(m => {
-              const status = maintenanceStatus(m, codes);
-              const memberCodes = codes.filter(c => c.is_used && c.used_by_member_id === m.id).sort((a, b) => new Date(b.used_at) - new Date(a.used_at));
-              const downlines = approvedMembers.filter(d => d.referrer_id === m.id);
-              if (downlines.length === 0) return null;
-              return (
-                <div key={m.id} className="bg-white rounded-2xl border border-gray-100 shadow overflow-hidden">
-                  <div className={`p-4 ${status.isGreen ? "bg-green-50" : "bg-red-50"} border-b border-gray-100`}>
-                    <p className="font-bold text-gray-900">{m.full_name}</p>
-                    <p className="text-xs text-gray-500">{downlines.length} direct downlines</p>
-                  </div>
-                  <div className="p-3 space-y-2">
-                    {downlines.map(d => {
-                      const ds = maintenanceStatus(d, codes);
-                      return (
-                        <div key={d.id} className="flex items-center justify-between text-sm py-1.5 border-b border-gray-50 last:border-0">
-                          <span className="text-gray-700 truncate">{d.full_name}</span>
-                          <Badge className={ds.isGreen ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}>{ds.isGreen ? "Active" : "Inactive"}</Badge>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+        <div className="space-y-6">
+          <div className="mb-2">
+            <h2 className="text-xl font-bold text-gray-900">Downline Monitoring</h2>
+            <p className="text-gray-500 text-sm">Track each 1st-level downline's maintenance-code redemptions, cycle by cycle.</p>
           </div>
+          {/* Member selector */}
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-600 whitespace-nowrap">Select member:</label>
+            <select
+              value={monitorMember?.id || ""}
+              onChange={e => {
+                const m = approvedMembers.find(m => m.id === e.target.value);
+                setMonitorMember(m || null);
+              }}
+              className="flex-1 max-w-sm h-10 rounded-xl border border-gray-200 px-3 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 bg-white"
+            >
+              <option value="">Choose a member...</option>
+              {approvedMembers.map(m => (
+                <option key={m.id} value={m.id}>{m.full_name} (@{m.username})</option>
+              ))}
+            </select>
+          </div>
+          {monitorMember ? (
+            <MonitoringView member={monitorMember} members={members} codes={codes} />
+          ) : (
+            <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-12 text-center">
+              <Eye className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-400">Select a member above to view their 1st-level downline monitoring.</p>
+            </div>
+          )}
         </div>
       )}
 
