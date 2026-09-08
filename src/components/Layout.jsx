@@ -61,7 +61,7 @@ export default function Layout({ children, currentPageName }) {
     if (item.path === "LevelBonuses") return showComPlan;
     return true;
   });
-  if (isAdmin) items = [...items, ...ADMIN_ITEMS];
+  if (isAdmin || isSupAdmin) items = [...items, ...ADMIN_ITEMS];
   if (isSubAdmin) items = [...items, ...SUBADMIN_ITEMS];
   if (isSupAdmin) items = [...items, ...SUPADMIN_ITEMS];
   if (isAdmin || showSubAdmin) {
