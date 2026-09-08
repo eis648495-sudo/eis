@@ -18,6 +18,9 @@ export default function Admin() {
   const [search, setSearch] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
   const [editMember, setEditMember] = useState(null);
+  const [redeemModal, setRedeemModal] = useState(null);
+  const [redeemCode, setRedeemCode] = useState("");
+  const [redeemBusy, setRedeemBusy] = useState(false);
   const [sponsorModal, setSponsorModal] = useState(null);
   const [newCode, setNewCode] = useState({ count: "1", description: "", assignedUsername: "" });
   const [gcash, setGcash] = useState({ gcash_number: "", gcash_name: "" });
@@ -207,6 +210,60 @@ export default function Admin() {
       setEditMember(null);
       window.location.reload();
     } catch { toast.error("Failed to update credentials"); }
+  }
+
+  async function redeemCodeForMember() {
+    if (!redeemModal || !redeemCode.trim()) { toast.error("Enter a code"); return; }
+    setRedeemBusy(true);
+    try {
+      const member = redeemModal;
+      const { data: found, error } = await supabase
+        .from("maintenance_codes").select("*").eq("code", redeemCode.toUpperCase()).eq("is_used", false).limit(1);
+      if (error || !found?.length) { toast.error("Invalid or already used code"); setRedeemBusy(false); return; }
+      const codeRecord = found[0];
+      if (codeRecord.assigned_username && codeRecord.assigned_username !== member.username) {
+        toast.error(`This code is assigned to @${codeRecord.assigned_username}`); setRedeemBusy(false); return;
+      }
+      await supabase.from("maintenance_codes").update({
+        is_used: true, used_by_member_id: member.id, used_at: new Date().toISOString(),
+      }).eq("id", codeRecord.id);
+      await supabase.from("transactions").insert({
+        member_id: member.id, type: "maintenance_code", amount: 0,
+        description: `Redeemed maintenance code: ${codeRecord.code}`, status: "completed",
+      });
+      const { data: freshMembers } = await supabase.from("members").select("*");
+      const { data: freshCodes } = await supabase.from("maintenance_codes").select("*");
+      const canEarn = (m) => {
+        if (!m || m.status !== "approved") return false;
+        return maintenanceStatus(m, freshCodes || codes).isGreen;
+      };
+      const referrer = (freshMembers || members).find(m => m.id === member.referrer_id);
+      if (canEarn(referrer)) {
+        const bonus1 = LEVEL_CONFIG.find(l => l.level === 1)?.bonus_amount || 0;
+        if (bonus1 > 0) await supabase.from("transactions").insert({
+          member_id: referrer.id, type: "referral_bonus", amount: bonus1, bonus_level: 1,
+          description: `Level 1 bonus from ${member.username}`, status: "completed", from_member_id: member.id,
+        });
+      }
+      let current = referrer;
+      for (let level = 2; level <= 5; level++) {
+        if (!current) break;
+        const upline = (freshMembers || members).find(m => m.id === current.referrer_id);
+        if (!upline) break;
+        if (canEarn(upline)) {
+          const bonus = LEVEL_CONFIG.find(l => l.level === level)?.bonus_amount || 0;
+          if (bonus > 0) await supabase.from("transactions").insert({
+            member_id: upline.id, type: "level_bonus", amount: bonus, bonus_level: level,
+            description: `Level ${level} bonus from ${member.username}`, status: "completed", from_member_id: member.id,
+          });
+        }
+        current = upline;
+      }
+      toast.success("Code redeemed successfully! Upline bonuses distributed.");
+      setRedeemModal(null); setRedeemCode("");
+      window.location.reload();
+    } catch (err) { toast.error(err.message || "Failed to redeem code"); }
+    setRedeemBusy(false);
   }
 
   async function changeSponsor(memberId, newSponsorId) {
@@ -409,7 +466,7 @@ export default function Admin() {
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <button onClick={() => setSponsorModal({ member: m, newSponsorId: "" })} className="p-2 bg-yellow-100 text-yellow-600 rounded-lg hover:bg-yellow-200 transition-colors" title="Change Sponsor"><GitBranch className="w-4 h-4" /></button>
                     <button onClick={() => setEditMember({ ...m })} className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors" title="Edit Member"><Pencil className="w-4 h-4" /></button>
-                    <button onClick={() => { navigator.clipboard.writeText(m.referral_code || ""); toast.success("Referral code copied"); }} className="p-2 bg-teal-100 text-teal-600 rounded-lg hover:bg-teal-200 transition-colors" title="Copy Referral Code"><Key className="w-4 h-4" /></button>
+                    <button onClick={() => { setRedeemModal(m); setRedeemCode(""); }} className="p-2 bg-teal-100 text-teal-600 rounded-lg hover:bg-teal-200 transition-colors" title="Redeem Code"><Key className="w-4 h-4" /></button>
                     <button onClick={() => setEditMember({ ...m })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>
                     <button onClick={() => setShowPasswords(s => !s)} className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors" title="Toggle Passwords"><Lock className="w-4 h-4" /></button>
                     <button onClick={() => setEditMember({ ...m })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>
@@ -811,6 +868,34 @@ export default function Admin() {
               <div className="p-6 border-t border-gray-100 flex gap-3">
                 <Button onClick={() => setEditMember(null)} variant="outline" className="flex-1">Cancel</Button>
                 <Button onClick={saveEditMember} className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white">Save Changes</Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Redeem Code Modal */}
+      <AnimatePresence>
+        {redeemModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setRedeemModal(null); setRedeemCode(""); }}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Key className="w-5 h-5 text-teal-600" /> Redeem Code — {redeemModal.username}</h2>
+                <button onClick={() => { setRedeemModal(null); setRedeemCode(""); }} className="p-1 rounded-lg hover:bg-gray-100"><XIcon className="w-5 h-5 text-gray-400" /></button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+                  <p className="text-sm text-teal-800">Enter a maintenance code to redeem on behalf of this member. The 5-level upline bonuses will be distributed automatically using the same rules as the member's own redemption.</p>
+                </div>
+                <div>
+                  <Label>Maintenance Code</Label>
+                  <Input value={redeemCode} onChange={e => setRedeemCode(e.target.value)} placeholder="e.g. MAINT-XXXXXX" className="font-mono" />
+                </div>
+              </div>
+              <div className="p-6 border-t border-gray-100 flex gap-3">
+                <Button onClick={() => { setRedeemModal(null); setRedeemCode(""); }} variant="outline" className="flex-1">Cancel</Button>
+                <Button onClick={redeemCodeForMember} disabled={redeemBusy} className="flex-1 bg-teal-500 hover:bg-teal-600 text-white">{redeemBusy ? "Redeeming..." : "Redeem Code"}</Button>
               </div>
             </motion.div>
           </motion.div>
