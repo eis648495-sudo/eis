@@ -10,6 +10,7 @@ import {
 import toast from "react-hot-toast";
 import { useTable, updateRecord, createRecord, deleteRecord } from "../lib/useData";
 import { supabase } from "../lib/supabase";
+import { getSessionMemberId } from "../lib/auth";
 import { money, formatDate, generateReferralCode, maintenanceStatus, formatTime, LEVEL_CONFIG } from "../lib/helpers";
 import { Button, Input, Label, Badge } from "./ui";
 import Genealogy from "./Genealogy";
@@ -99,6 +100,8 @@ export default function Admin() {
   const approvedMembers = activeMembers.filter(m => m.status === "approved");
   const adminMembers = activeMembers.filter(m => m.role === "admin");
   const subAdminMembers = activeMembers.filter(m => m.role === "sub_admin");
+  const currentMemberId = getSessionMemberId();
+  const isSupAdmin = members.find(m => m.id === currentMemberId)?.username === "supadmin";
 
   const filteredMembers = activeMembers.filter(m => {
     if (!search) return true;
@@ -1104,8 +1107,8 @@ export default function Admin() {
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Settings className="w-5 h-5 text-gray-500" /> Sidebar Tab Visibility</h2>
             <div className="space-y-3">
               {[
-                { key: "monitoring", label: "1st Level Monitoring" },
-                { key: "subadmin", label: "Sub-Admin Panel" },
+                ...(isSupAdmin ? [{ key: "monitoring", label: "1st Level Monitoring" }] : []),
+                ...(isSupAdmin ? [{ key: "subadmin", label: "Sub-Admin Panel" }] : []),
                 { key: "terms", label: "Terms & Conditions" },
                 { key: "complan", label: "Mamlakah ComPlan" },
               ].map(t => (
