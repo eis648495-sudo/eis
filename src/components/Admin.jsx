@@ -25,6 +25,7 @@ export default function Admin() {
   const [savingMin, setSavingMin] = useState(false);
   const [txSearch, setTxSearch] = useState("");
   const [tabVisibility, setTabVisibility] = useState({ monitoring: true, subadmin: true, terms: true, complan: true });
+  const [, setTick] = useState(0);
 
   const { data: members = [] } = useTable("members");
   const { data: codes = [] } = useTable("maintenance_codes");
@@ -45,6 +46,12 @@ export default function Admin() {
     const minSetting = settings.find(s => s.setting_key === "withdrawal_minimum_amount");
     if (minSetting) setMinAmount(minSetting.setting_value);
   }, [settings]);
+
+  // Live countdown — re-render every second so maintenance timers tick down
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const activeGcash = gcashInfo.find(g => g.is_active) || gcashInfo[0];
   const pendingWithdrawals = withdrawals.filter(w => w.status === "pending");
