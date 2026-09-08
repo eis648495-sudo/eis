@@ -4,6 +4,7 @@ import {
   Shield, Users, Ticket, Wallet, Smartphone, Settings, Check, X, Plus,
   Eye, EyeOff, DollarSign, Trash2, RotateCcw, UserCog, GitBranch, Search,
   Download, Copy, Crown, ArrowRight, ChevronDown, X as XIcon, FileText,
+  Key, Clock, Lock, Pencil,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, updateRecord, createRecord, deleteRecord } from "../lib/useData";
@@ -362,42 +363,98 @@ export default function Admin() {
             </div>
           )}
 
-          {/* Members Table */}
-          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead><tr className="border-b border-gray-100">
-                  {["Name", "Username", "Password", "Role", "Status", "Referral", "Downlines", "Balance", "Actions"].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>)}
-                </tr></thead>
-                <tbody>
-                  {filteredMembers.map(m => {
-                    const earnings = getMemberEarnings(m.id);
-                    return (
-                      <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{m.full_name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">@{m.username}</td>
-                        <td className="px-4 py-3 text-sm font-mono text-gray-600">{showPasswords ? (m.password || "—") : "••••••"}</td>
-                        <td className="px-4 py-3"><Badge className="bg-gray-100 text-gray-600 capitalize">{m.role}</Badge></td>
-                        <td className="px-4 py-3"><Badge className={m.status === "approved" ? "bg-green-100 text-green-700" : m.status === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}>{m.status}</Badge></td>
-                        <td className="px-4 py-3 text-sm font-mono text-gray-600 whitespace-nowrap">{m.referral_code || "—"}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">{m.direct_downlines_count || 0}/10</td>
-                        <td className="px-4 py-3 text-sm font-bold text-gray-900 whitespace-nowrap">{money(m.available_balance || 0)}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => setEditMember({ ...m })} className="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200" title="Edit Member"><UserCog className="w-3.5 h-3.5" /></button>
-                            <button onClick={() => setSponsorModal({ member: m, newSponsorId: "" })} className="p-1.5 bg-amber-100 text-amber-700 rounded hover:bg-amber-200" title="Change Sponsor"><GitBranch className="w-3.5 h-3.5" /></button>
-                            {m.status === "approved" && (
-                              <button onClick={() => deleteMember(m.id)} className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200" title="Delete Account"><Trash2 className="w-3.5 h-3.5" /></button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          {/* Members List — Card Layout */}
+          {(() => {
+            const approved = filteredMembers.filter(m => m.status === "approved");
+            const activeMaintenance = approved.filter(m => maintenanceStatus(m, codes).isGreen);
+            const expiredMaintenance = approved.filter(m => !maintenanceStatus(m, codes).isGreen);
+
+            const renderRow = (m, index) => {
+              const status = maintenanceStatus(m, codes);
+              return (
+                <div key={m.id} className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 px-2 hover:bg-gray-50 rounded-xl transition-colors">
+                  {/* Index badge */}
+                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">{index + 1}</div>
+                  {/* User info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900 truncate">{m.full_name}</p>
+                    <p className="text-sm text-gray-400 truncate">@{m.username}{showPasswords && m.password ? ` · ${m.password}` : ""}</p>
+                  </div>
+                  {/* Status badge */}
+                  <div className="flex-shrink-0">
+                    {status.isGreen ? (
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 rounded-lg">
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        <span className="text-sm font-medium text-green-700">{formatTime(status.secondsLeft)}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 rounded-lg">
+                        <div className="w-2 h-2 bg-red-500 rounded-full" />
+                        <span className="text-sm font-medium text-red-700">No maintenance</span>
+                      </div>
+                    )}
+                  </div>
+                  {/* Metrics */}
+                  <div className="hidden sm:flex items-center gap-4 flex-shrink-0">
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400">Balance</p>
+                      <p className="text-sm font-bold text-gray-900">{money(m.available_balance || 0)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400">Downlines</p>
+                      <p className="text-sm font-bold text-gray-900">{m.direct_downlines_count || 0}/10</p>
+                    </div>
+                  </div>
+                  {/* Action pills */}
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <button onClick={() => setSponsorModal({ member: m, newSponsorId: "" })} className="p-2 bg-yellow-100 text-yellow-600 rounded-lg hover:bg-yellow-200 transition-colors" title="Change Sponsor"><GitBranch className="w-4 h-4" /></button>
+                    <button onClick={() => setEditMember({ ...m })} className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors" title="Edit Member"><Pencil className="w-4 h-4" /></button>
+                    <button onClick={() => { navigator.clipboard.writeText(m.referral_code || ""); toast.success("Referral code copied"); }} className="p-2 bg-teal-100 text-teal-600 rounded-lg hover:bg-teal-200 transition-colors" title="Copy Referral Code"><Key className="w-4 h-4" /></button>
+                    <button onClick={() => setEditMember({ ...m })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>
+                    <button onClick={() => setShowPasswords(s => !s)} className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors" title="Toggle Passwords"><Lock className="w-4 h-4" /></button>
+                    <button onClick={() => setEditMember({ ...m })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>
+                    {m.status === "approved" && (
+                      <button onClick={() => deleteMember(m.id)} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Delete Account"><Trash2 className="w-4 h-4" /></button>
+                    )}
+                  </div>
+                </div>
+              );
+            };
+
+            return (
+              <>
+                {/* Active Maintenance */}
+                <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 bg-green-50">
+                    <h3 className="font-bold text-green-900 flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 bg-green-500 rounded-full" />
+                      Active Maintenance ({activeMaintenance.length})
+                    </h3>
+                  </div>
+                  <div className="p-2">
+                    {activeMaintenance.length === 0 ? (
+                      <p className="text-center py-8 text-gray-400">No active members</p>
+                    ) : activeMaintenance.map((m, i) => renderRow(m, i))}
+                  </div>
+                </div>
+
+                {/* Expired / No Maintenance */}
+                <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="p-4 border-b border-gray-100 bg-red-50">
+                    <h3 className="font-bold text-red-900 flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 bg-red-500 rounded-full" />
+                      Expired / No Maintenance ({expiredMaintenance.length})
+                    </h3>
+                  </div>
+                  <div className="p-2">
+                    {expiredMaintenance.length === 0 ? (
+                      <p className="text-center py-8 text-gray-400">No expired members</p>
+                    ) : expiredMaintenance.map((m, i) => renderRow(m, i))}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 
