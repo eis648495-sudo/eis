@@ -209,7 +209,6 @@ export default function Admin() {
   async function saveEditMember() {
     try {
       await updateRecord("members", editMember.id, {
-        username: editMember.username,
         password: editMember.password,
       });
       toast.success("Credentials updated");
@@ -284,6 +283,7 @@ export default function Admin() {
       facebook_name: m.facebook_name || "",
       address: m.address || "",
       backup_mobile: m.backup_mobile || "",
+      password: "",
     });
     setProfileSearchOpen(false);
     setProfileSearch("");
@@ -293,7 +293,9 @@ export default function Admin() {
     if (!profileMember) return;
     setSavingProfile(true);
     try {
-      await updateRecord("members", profileMember.id, profileForm);
+      const updates = { ...profileForm };
+      if (!updates.password) delete updates.password;
+      await updateRecord("members", profileMember.id, updates);
       toast.success("Profile updated successfully!");
       setProfileMember({ ...profileMember, ...profileForm });
       window.location.reload();
@@ -970,6 +972,15 @@ export default function Admin() {
                 </div>
               </div>
 
+              {/* Change Password */}
+              <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Change Password</h2>
+                <div>
+                  <Label>New Password</Label>
+                  <Input value={profileForm.password || ""} onChange={e => setProfileForm({ ...profileForm, password: e.target.value })} type="password" placeholder="Leave blank to keep current password" />
+                </div>
+              </div>
+
               <Button onClick={saveProfile} disabled={savingProfile} className="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white h-12 rounded-xl font-bold">
                 <Save className="w-4 h-4 mr-2" /> {savingProfile ? "Saving..." : "Save Changes"}
               </Button>
@@ -998,8 +1009,7 @@ export default function Admin() {
                   <p className="text-xs font-bold text-orange-600 uppercase tracking-wide mb-1">Current Password</p>
                   <p className="text-lg font-bold text-gray-900">{editMember.password || "—"}</p>
                 </div>
-                <div><Label>Username</Label><Input value={editMember.username || ""} onChange={e => setEditMember({ ...editMember, username: e.target.value })} /></div>
-                <div><Label>Current Password</Label><Input value={editMember.password || ""} onChange={e => setEditMember({ ...editMember, password: e.target.value })} /></div>
+                <div><Label>New Password</Label><Input value={editMember.password || ""} onChange={e => setEditMember({ ...editMember, password: e.target.value })} /></div>
               </div>
               <div className="p-6 border-t border-gray-100 flex gap-3">
                 <Button onClick={() => setEditMember(null)} variant="outline" className="flex-1">Cancel</Button>

@@ -26,6 +26,7 @@ export default function Profile() {
         facebook_name: currentMember.facebook_name || "",
         address: currentMember.address || "",
         backup_mobile: currentMember.backup_mobile || "",
+        password: "",
       });
       setInitialized(true);
     }
@@ -48,8 +49,9 @@ export default function Profile() {
 
   async function save() {
     setSaving(true);
-    try {
-      await updateRecord("members", currentMember.id, form);
+    const updates = { ...form };
+    if (!updates.password) delete updates.password;    try {
+      await updateRecord("members", currentMember.id, updates);
       toast.success("Profile updated successfully!");
       window.location.reload();
     } catch {
@@ -142,6 +144,16 @@ export default function Profile() {
             <Label>GCash Name</Label>
             <Input value={form.gcash_name} onChange={update("gcash_name")} placeholder="Registered name" />
           </div>
+        </div>
+      </motion.div>
+
+      {/* Change Password */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+        className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 mb-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Change Password</h2>
+        <div>
+          <Label>New Password</Label>
+          <Input value={form.password} onChange={update("password")} type="password" placeholder="Leave blank to keep current password" />
         </div>
       </motion.div>
 
