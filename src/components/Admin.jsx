@@ -200,20 +200,13 @@ export default function Admin() {
   async function saveEditMember() {
     try {
       await updateRecord("members", editMember.id, {
-        full_name: editMember.full_name,
         username: editMember.username,
         password: editMember.password,
-        email: editMember.email,
-        phone: editMember.phone,
-        referral_code: editMember.referral_code,
-        available_balance: parseFloat(editMember.available_balance) || 0,
-        total_earnings: parseFloat(editMember.total_earnings) || 0,
-        maintenance_override: editMember.maintenance_override || null,
       });
-      toast.success("Member updated");
+      toast.success("Credentials updated");
       setEditMember(null);
       window.location.reload();
-    } catch { toast.error("Failed to update member"); }
+    } catch { toast.error("Failed to update credentials"); }
   }
 
   async function changeSponsor(memberId, newSponsorId) {
@@ -797,40 +790,27 @@ export default function Admin() {
         </div>
       )}
 
-      {/* Edit Member Modal */}
+      {/* Reset Credentials Modal */}
       <AnimatePresence>
         {editMember && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditMember(null)}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-              <div className="p-6 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white rounded-t-3xl z-10">
-                <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><UserCog className="w-5 h-5 text-blue-500" /> Edit Member Details</h2>
+              className="bg-white rounded-3xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-gray-900">Reset Credentials — {editMember.username}</h2>
                 <button onClick={() => setEditMember(null)} className="p-1 rounded-lg hover:bg-gray-100"><XIcon className="w-5 h-5 text-gray-400" /></button>
               </div>
               <div className="p-6 space-y-4">
-                <div><Label>Full Name</Label><Input value={editMember.full_name || ""} onChange={e => setEditMember({ ...editMember, full_name: e.target.value })} /></div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                  <p className="text-xs font-bold text-orange-600 uppercase tracking-wide mb-1">Current Password</p>
+                  <p className="text-lg font-bold text-gray-900">{editMember.password || "—"}</p>
+                </div>
                 <div><Label>Username</Label><Input value={editMember.username || ""} onChange={e => setEditMember({ ...editMember, username: e.target.value })} /></div>
-                <div><Label>Password</Label><Input value={editMember.password || ""} onChange={e => setEditMember({ ...editMember, password: e.target.value })} /></div>
-                <div><Label>Email</Label><Input value={editMember.email || ""} onChange={e => setEditMember({ ...editMember, email: e.target.value })} placeholder="optional" /></div>
-                <div><Label>Phone</Label><Input value={editMember.phone || ""} onChange={e => setEditMember({ ...editMember, phone: e.target.value })} placeholder="optional" /></div>
-                <div><Label>Referral Code</Label><Input value={editMember.referral_code || ""} onChange={e => setEditMember({ ...editMember, referral_code: e.target.value })} /></div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Available Balance (₱)</Label><Input type="number" value={editMember.available_balance || 0} onChange={e => setEditMember({ ...editMember, available_balance: e.target.value })} /></div>
-                  <div><Label>Total Earnings (₱)</Label><Input type="number" value={editMember.total_earnings || 0} onChange={e => setEditMember({ ...editMember, total_earnings: e.target.value })} /></div>
-                </div>
-                <div>
-                  <Label>Maintenance Override</Label>
-                  <select value={editMember.maintenance_override || ""} onChange={e => setEditMember({ ...editMember, maintenance_override: e.target.value || null })}
-                    className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20">
-                    <option value="">None (use timer)</option>
-                    <option value="green">Force Green (Active)</option>
-                    <option value="red">Force Red (Inactive)</option>
-                  </select>
-                </div>
+                <div><Label>Current Password</Label><Input value={editMember.password || ""} onChange={e => setEditMember({ ...editMember, password: e.target.value })} /></div>
               </div>
-              <div className="p-6 border-t border-gray-100 flex gap-3 sticky bottom-0 bg-white rounded-b-3xl">
-                <Button onClick={saveEditMember} className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">Save Changes</Button>
+              <div className="p-6 border-t border-gray-100 flex gap-3">
                 <Button onClick={() => setEditMember(null)} variant="outline" className="flex-1">Cancel</Button>
+                <Button onClick={saveEditMember} className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white">Save Changes</Button>
               </div>
             </motion.div>
           </motion.div>
