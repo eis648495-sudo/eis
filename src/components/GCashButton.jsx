@@ -30,7 +30,7 @@ export function GCashButton() {
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
-      const fileName = `receipts/${Date.now()}.${ext}`;
+      const fileName = `${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("receipts").upload(fileName, file);
       let receiptUrl = fileName;
       if (!upErr) {

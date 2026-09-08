@@ -4,7 +4,7 @@ import {
   Shield, Users, Ticket, Wallet, Smartphone, Settings, Check, X, Plus,
   Eye, EyeOff, DollarSign, Trash2, RotateCcw, UserCog, GitBranch, Search,
   Download, Copy, Crown, ArrowRight, ChevronDown, X as XIcon, FileText,
-  Key, Clock, Lock, Pencil, User, Save,
+  Key, Clock, Lock, Pencil, User, Save, Upload, Image as ImageIcon,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, updateRecord, createRecord, deleteRecord } from "../lib/useData";
@@ -43,6 +43,7 @@ export default function Admin() {
   const { data: gcashInfo = [] } = useTable("gcash_info");
   const { data: settings = [] } = useTable("system_settings");
   const { data: transactions = [] } = useTable("transactions");
+  const { data: receipts = [] } = useTable("gcash_receipts");
 
   useEffect(() => {
     const map = {};
@@ -333,6 +334,25 @@ export default function Admin() {
       setGcash({ gcash_number: "", gcash_name: "" });
       window.location.reload();
     } catch { toast.error("Failed to save GCash info"); }
+  }
+
+  function receiptUrl(r) {
+    if (!r.receipt_url) return null;
+    if (r.receipt_url.startsWith("http")) return r.receipt_url;
+    // Strip leading "receipts/" if present — the bucket name is already "receipts"
+    const path = r.receipt_url.replace(/^receipts\//, "");
+    const { data } = supabase.storage.from("receipts").getPublicUrl(path);
+    return data?.publicUrl || null;
+  }
+
+  async function verifyReceipt(id) {
+    try { await updateRecord("gcash_receipts", id, { status: "verified" }); toast.success("Receipt verified"); window.location.reload(); }
+    catch { toast.error("Failed to verify receipt"); }
+  }
+
+  async function rejectReceipt(id) {
+    try { await updateRecord("gcash_receipts", id, { status: "rejected" }); toast.success("Receipt rejected"); window.location.reload(); }
+    catch { toast.error("Failed to reject receipt"); }
   }
 
   async function saveMinAmount() {
@@ -729,19 +749,80 @@ export default function Admin() {
 
       {/* GCash Tab */}
       {tab === "gcash" && (
-        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Smartphone className="w-5 h-5 text-blue-500" /> GCash Payment Info</h2>
-          {activeGcash && (
-            <div className="mb-6 p-4 bg-blue-50 rounded-2xl border border-blue-100">
-              <p className="text-sm text-gray-600">Current active GCash:</p>
-              <p className="font-bold text-gray-900 text-lg">{activeGcash.gcash_number}</p>
-              <p className="text-sm text-gray-600">{activeGcash.gcash_name}</p>
+        <div className="space-y-6">
+          {/* GCash Setup */}
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Smartphone className="w-5 h-5 text-blue-500" /> GCash Payment Info</h2>
+            {activeGcash && (
+              <div className="mb-6 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                <p className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-2">Current Active GCash</p>
+                <p className="font-bold text-blue-700 text-xl">{activeGcash.gcash_name}</p>
+                <p className="font-bold text-blue-700 text-lg">{activeGcash.gcash_number}</p>
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div><Label>GCash Name</Label><Input value={gcash.gcash_name} onChange={e => setGcash({ ...gcash, gcash_name: e.target.value })} placeholder="e.g. Juan Dela Cruz" /></div>
+              <div><Label>GCash Number</Label><Input value={gcash.gcash_number} onChange={e => setGcash({ ...gcash, gcash_number: e.target.value })} placeholder="e.g. 09XXXXXXXX" /></div>
             </div>
-          )}
-          <div className="space-y-4">
-            <div><Label>GCash Number</Label><Input value={gcash.gcash_number} onChange={e => setGcash({ ...gcash, gcash_number: e.target.value })} placeholder="09XX XXX XXXX" /></div>
-            <div><Label>GCash Name</Label><Input value={gcash.gcash_name} onChange={e => setGcash({ ...gcash, gcash_name: e.target.value })} placeholder="Registered name" /></div>
-            <Button onClick={saveGcash} className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><Smartphone className="w-4 h-4 mr-2" /> Save GCash Info</Button>
+            <Button onClick={saveGcash} className="mt-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white"><Smartphone className="w-4 h-4 mr-2" /> Save GCash Info</Button>
+          </div>
+
+          {/* Member GCash Receipts */}
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <Upload className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Member GCash Receipts</h3>
+                  <p className="text-sm text-gray-500">Receipts uploaded by members as proof of payment.</p>
+                </div>
+              </div>
+              <Badge className="bg-purple-100 text-purple-700">{receipts.length} total</Badge>
+            </div>
+            <div className="p-4 space-y-3">
+              {receipts.length === 0 ? (
+                <div className="text-center py-12">
+                  <ImageIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-400">No receipts uploaded yet.</p>
+                </div>
+              ) : (
+                [...receipts].sort((a, b) => new Date(b.created_at || b.created_date || 0) - new Date(a.created_at || a.created_date || 0)).map(r => {
+                  const member = members.find(m => m.id === r.member_id);
+                  const name = r.member_name || member?.full_name || member?.username || "Unknown";
+                  const date = r.created_at || r.created_date;
+                  return (
+                    <div key={r.id} className="flex items-start gap-4 p-4 rounded-2xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                      {/* Receipt thumbnail */}
+                      <div className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 flex items-center justify-center">
+                        {receiptUrl(r) ? (
+                          <img src={receiptUrl(r)} alt="Receipt" className="w-full h-full object-cover" />
+                        ) : (
+                          <ImageIcon className="w-8 h-8 text-gray-300" />
+                        )}
+                      </div>
+                      {/* Receipt info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-gray-900">{name}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{date ? new Date(date).toLocaleString("en-PH", { month: "numeric", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true }) : "—"}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          {r.status === "pending" && <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>}
+                          {r.status === "verified" && <Badge className="bg-green-100 text-green-700">Verified</Badge>}
+                          {r.status === "rejected" && <Badge className="bg-red-100 text-red-700">Rejected</Badge>}
+                          {r.status === "pending" && (
+                            <div className="flex gap-2">
+                              <Button onClick={() => verifyReceipt(r.id)} size="sm" className="bg-green-600 hover:bg-green-700 text-white h-8 px-3 text-xs"><Check className="w-3 h-3 mr-1" /> Verify</Button>
+                              <Button onClick={() => rejectReceipt(r.id)} size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 h-8 px-3 text-xs"><X className="w-3 h-3 mr-1" /> Reject</Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         </div>
       )}
