@@ -61,10 +61,6 @@ services:
       - "3000:5173"
     environment:
       - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
-      # Local PostgREST replaces unreachable Supabase — remove these two lines
-      # when the real Supabase project is restored
-      - VITE_SUPABASE_URL=https://8000-${BASE44_PUBLIC_HOST_SUFFIX}
-      - VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg5ODAyMTgwLCJleHAiOjE4OTM0NTYwMDB9.mBuSxmQwNjXf7lLhP8mpeTiX7atjDlKhx4gvB_hJBTQ
     env_file:
       - ./.env.base44-defaults
       - /run/base44/app.env
