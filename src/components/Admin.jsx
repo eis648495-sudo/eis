@@ -94,15 +94,18 @@ export default function Admin() {
 
   const activeGcash = gcashInfo.find(g => g.is_active) || gcashInfo[0];
   const pendingWithdrawals = withdrawals.filter(w => w.status === "pending");
-  const activeMembers = members.filter(m => m.status !== "deleted" && m.username !== "supadmin");
+  const currentMemberId = getSessionMemberId();
+  const isSupAdmin = members.find(m => m.id === currentMemberId)?.username === "supadmin";
+  const activeMembers = members.filter(m => {
+    if (m.status === "deleted") return false;
+    if (!isSupAdmin && (m.username === "supadmin" || m.username === "admin")) return false;
+    return true;
+  });
   const deletedMembers = members.filter(m => m.status === "deleted");
   const pendingMembers = activeMembers.filter(m => m.status === "pending");
   const approvedMembers = activeMembers.filter(m => m.status === "approved");
   const adminMembers = activeMembers.filter(m => m.role === "admin");
   const subAdminMembers = activeMembers.filter(m => m.role === "sub_admin");
-  const currentMemberId = getSessionMemberId();
-  const isSupAdmin = members.find(m => m.id === currentMemberId)?.username === "supadmin";
-
   const filteredMembers = activeMembers.filter(m => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -576,9 +579,9 @@ export default function Admin() {
                     <button onClick={() => setSponsorModal({ member: m, newSponsorId: "" })} className="p-2 bg-yellow-100 text-yellow-600 rounded-lg hover:bg-yellow-200 transition-colors" title="Change Sponsor"><GitBranch className="w-4 h-4" /></button>
                     <button onClick={() => setEditMember({ ...m })} className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors" title="Edit Member"><Pencil className="w-4 h-4" /></button>
                     <button onClick={() => { setRedeemModal(m); setRedeemCode(""); }} className="p-2 bg-teal-100 text-teal-600 rounded-lg hover:bg-teal-200 transition-colors" title="Redeem Code"><Key className="w-4 h-4" /></button>
-                    <button onClick={() => setEditMember({ ...m })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>
+                    {isSupAdmin && <button onClick={() => setEditMember({ ...m })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>}
                     <button onClick={() => setShowPasswords(s => !s)} className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors" title="Toggle Passwords"><Lock className="w-4 h-4" /></button>
-                    <button onClick={() => setEditMember({ ...m })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>
+                    {isSupAdmin && <button onClick={() => setEditMember({ ...m })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>}
                     {m.status === "approved" && (
                       <button onClick={() => deleteMember(m.id)} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Delete Account"><Trash2 className="w-4 h-4" /></button>
                     )}
