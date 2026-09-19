@@ -1,7 +1,7 @@
 # Base44 Dev Environment — Mamlakah
 
 ## Stack
-React 18 + Vite 6 frontend. Backend is a local Postgres + PostgREST stack (replaces the external Supabase project, which is currently unreachable/paused).
+React 18 + Vite 6 frontend. Backend is the external Supabase project (ref: mtfrvdccubwqdnmnudyu), which is now reachable. A local Postgres + PostgREST stack is also available as a fallback.
 
 ## Run
 `docker compose -f docker-compose.base44.yml up -d` — starts:
@@ -16,10 +16,10 @@ React 18 + Vite 6 frontend. Backend is a local Postgres + PostgREST stack (repla
 - Postgres: user `postgres`, password `postgres`, db `postgres`
 
 ## How it works
-The app's `src/lib/supabase.js` creates a Supabase client pointing at `VITE_SUPABASE_URL`. The compose sets this to the local PostgREST proxy (`https://8000-$BASE44_PUBLIC_HOST_SUFFIX`) with a generated JWT anon key, overriding the broken external Supabase credentials in `/run/base44/app.env`.
+The app's `src/lib/supabase.js` creates a Supabase client pointing at `VITE_SUPABASE_URL`. The real Supabase credentials are in `/run/base44/app.env` and used directly (no local override in compose).
 
-**When the real Supabase project is restored:** remove the `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` lines from the `web` service `environment:` section in `docker-compose.base44.yml` — the app will fall back to the real credentials in `/run/base44/app.env`.
+**If the external Supabase becomes unreachable again:** add `VITE_SUPABASE_URL=https://8000-${BASE44_PUBLIC_HOST_SUFFIX}` and a valid PostgREST JWT as `VITE_SUPABASE_ANON_KEY` to the `web` service `environment:` section in `docker-compose.base44.yml` to fall back to the local PostgREST stack.
 
 ## Verify
 - `curl -sf http://localhost:3000/` returns the landing page HTML
-- Login at `/MemberLogin` with `admin` / `admin123` → navigates to `/Dashboard`
+- Login at `/MemberLogin` with real Supabase member credentials → navigates to `/Dashboard`
