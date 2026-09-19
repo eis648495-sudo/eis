@@ -61,6 +61,8 @@ services:
       - "3000:5173"
     environment:
       - __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
+      - VITE_SUPABASE_URL=https://8000-${BASE44_PUBLIC_HOST_SUFFIX}
+      - VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg5ODA2Mzk5LCJleHAiOjE4OTM0NTYwMDB9.Tx8E-9Xet9CQOvY6p5ePyJZOt1bRW9W5qAV9zLos288
     env_file:
       - ./.env.base44-defaults
       - /run/base44/app.env
