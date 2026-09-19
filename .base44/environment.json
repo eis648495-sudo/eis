@@ -12,6 +12,11 @@
       "name": "VITE_SUPABASE_ANON_KEY",
       "description": "Your Supabase project anon/public key from the Supabase dashboard > Project Settings > API > Project API keys (anon public). Currently overridden by a local JWT — remove the override in docker-compose.base44.yml when the real project is restored.",
       "requiredAtBoot": true
+    },
+    {
+      "name": "VERCEL_TOKEN",
+      "description": "Vercel personal access token (from vercel.com → Account Settings → Tokens). Team-scoped token for team 'eis6', used to deploy/manage the mamlakahcommunity Vercel project via API.",
+      "requiredAtBoot": false
     }
   ]
 }
