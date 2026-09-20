@@ -65,7 +65,7 @@ export default function Genealogy() {
     const treeLevel = member.tree_level || level;
 
     return (
-      <div className={`flex flex-col items-center ${level > 0 ? "mt-10" : ""}`}>
+      <div className="flex flex-col items-center">
         {/* Node card */}
         <div
           onClick={() => setSelected(member)}
@@ -107,34 +107,37 @@ export default function Genealogy() {
           </div>
         </div>
 
-        {/* Children */}
+        {/* Children with T-junction connectors */}
         {downlines.length > 0 && (
-          <div className="relative flex flex-nowrap justify-center gap-4">
-            {/* Vertical line from parent down to horizontal connector */}
-            <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-blue-500" />
-            {downlines.slice(0, 10).map((d, i, arr) => {
-              const isOnly = arr.length === 1;
-              const isFirst = i === 0;
-              const isLast = i === arr.length - 1;
-              return (
-                <div key={d.id} className="relative flex flex-col items-center">
-                  {/* Horizontal connector segment — meets adjacent segments across the gap */}
-                  {!isOnly && (
-                    <div
-                      className="absolute -top-4 h-0.5 bg-blue-500"
-                      style={{
-                        left: isFirst ? '50%' : '-8px',
-                        right: isLast ? '50%' : '-8px',
-                      }}
-                    />
-                  )}
-                  {/* Vertical line from connector down to child */}
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-0.5 h-4 bg-blue-500" />
-                  <TreeNode member={d} level={level + 1} />
-                </div>
-              );
-            })}
-          </div>
+          <>
+            {/* Vertical line from parent bottom to horizontal bar */}
+            <div className="w-0.5 h-6 bg-[#2196F3]" />
+            {/* Children row — horizontal bar sits at the top */}
+            <div className="flex flex-nowrap justify-center gap-4">
+              {downlines.slice(0, 10).map((d, i, arr) => {
+                const isOnly = arr.length === 1;
+                const isFirst = i === 0;
+                const isLast = i === arr.length - 1;
+                return (
+                  <div key={d.id} className="relative flex flex-col items-center">
+                    {/* Horizontal bar segment — bridges the gap to adjacent children */}
+                    {!isOnly && (
+                      <div
+                        className="absolute top-0 h-0.5 bg-[#2196F3]"
+                        style={{
+                          left: isFirst ? '50%' : '-8px',
+                          right: isLast ? '50%' : '-8px',
+                        }}
+                      />
+                    )}
+                    {/* Vertical drop from horizontal bar to child card */}
+                    <div className="w-0.5 h-6 bg-[#2196F3]" />
+                    <TreeNode member={d} level={level + 1} />
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     );
