@@ -30,7 +30,7 @@ export default function Admin() {
   const [profileSearchOpen, setProfileSearchOpen] = useState(false);
   const [profileForm, setProfileForm] = useState(null);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [newCode, setNewCode] = useState({ count: "1", description: "", assignedUsername: "" });
+  const [newCode, setNewCode] = useState({ count: "1", assignedUsername: "" });
   const [gcash, setGcash] = useState({ gcash_number: "", gcash_name: "" });
   const [minAmount, setMinAmount] = useState("300");
   const [savingMin, setSavingMin] = useState(false);
@@ -46,7 +46,7 @@ export default function Admin() {
   const [transferring, setTransferring] = useState(false);
 
   const { data: members = [] } = useTable("members");
-  const { data: codes = [] } = useTable("maintenance_codes");
+  const { data: codes = [], refetch: refetchCodes } = useTable("maintenance_codes");
   const { data: withdrawals = [] } = useTable("conversion_requests");
   const { data: gcashInfo = [] } = useTable("gcash_info");
   const { data: settings = [] } = useTable("system_settings");
@@ -152,16 +152,18 @@ export default function Admin() {
     try {
       const records = [];
       for (let i = 0; i < count; i++) {
+        const base = "MAINT-" + generateReferralCode();
+        const code = newCode.assignedUsername ? `${base}-@${newCode.assignedUsername}` : base;
         records.push({
-          code: "MAINT-" + generateReferralCode(),
+          code,
           is_used: false,
-          description: newCode.description || null,
           assigned_username: newCode.assignedUsername || null,
         });
       }
       await supabase.from("maintenance_codes").insert(records);
       toast.success(`${count} code(s) generated!`);
-      setNewCode({ ...newCode, description: "", assignedUsername: "" });
+      setNewCode({ ...newCode, assignedUsername: "" });
+      refetchCodes();
     } catch { toast.error("Failed to generate codes"); }
   }
 
@@ -634,7 +636,7 @@ export default function Admin() {
         <div className="space-y-6">
           <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Plus className="w-5 h-5 text-amber-500" /> Generate Maintenance Codes</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label>Count</Label><Input type="number" value={newCode.count} onChange={e => setNewCode({ ...newCode, count: e.target.value })} /></div>
               <div>
                 <Label>Assign To (optional — locks code to this user)</Label>
@@ -644,7 +646,6 @@ export default function Admin() {
                   {activeMembers.map(m => <option key={m.id} value={m.username}>{m.full_name} (@{m.username})</option>)}
                 </select>
               </div>
-              <div><Label>Description</Label><Input value={newCode.description} onChange={e => setNewCode({ ...newCode, description: e.target.value })} placeholder="optional" /></div>
             </div>
             <Button onClick={generateCodes} className="mt-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white"><Plus className="w-4 h-4 mr-2" /> Generate Codes</Button>
           </div>
