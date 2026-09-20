@@ -96,7 +96,7 @@ export default function Admin() {
   const pendingWithdrawals = withdrawals.filter(w => w.status === "pending");
   const currentMemberId = getSessionMemberId();
   const isSupAdmin = members.find(m => m.id === currentMemberId)?.username === "supadmin";
-  const isOwner = members.find(m => m.id === currentMemberId)?.role === "admin";
+  const isOwner = members.find(m => m.id === currentMemberId)?.username === "admin";
   const canManageTabs = isSupAdmin || isOwner;
   const activeMembers = members.filter(m => {
     if (m.status === "deleted") return false;
