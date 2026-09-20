@@ -561,7 +561,7 @@ export default function Admin() {
                     ) : (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 rounded-lg">
                         <div className="w-2 h-2 bg-red-500 rounded-full" />
-                        <span className="text-sm font-medium text-red-700">No maintenance</span>
+                        <span className="text-sm font-medium text-red-700">{status.secondsLeft > 0 ? formatTime(status.secondsLeft) : "Expired"}</span>
                       </div>
                     )}
                   </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { GitBranch, Search, ArrowRight, Users, ZoomIn, ZoomOut, User, Clock, Activity } from "lucide-react";
@@ -25,7 +25,28 @@ export default function Genealogy() {
     if (currentMember && !selected) setSelected(currentMember);
   }, [currentMember]);
 
-  const approvedMembers = members.filter(m => m.status === "approved");
+  const allApproved = members.filter(m => m.status === "approved");
+  const isSuperAdmin = currentMember?.username === "supadmin" || currentMember?.username === "admin";
+
+  // Non-super-admin viewers only see their own downline tree — supadmin, admin,
+  // and crosslines (members outside their downline lineage) are hidden.
+  const visibleIds = useMemo(() => {
+    if (isSuperAdmin || !currentMember) return null;
+    const ids = new Set([currentMember.id]);
+    const stack = [currentMember.id];
+    while (stack.length) {
+      const id = stack.pop();
+      allApproved.filter(m => m.referrer_id === id).forEach(m => {
+        if (!ids.has(m.id)) { ids.add(m.id); stack.push(m.id); }
+      });
+    }
+    return ids;
+  }, [isSuperAdmin, currentMember, allApproved]);
+
+  const approvedMembers = visibleIds
+    ? allApproved.filter(m => visibleIds.has(m.id))
+    : allApproved;
+
   const searchResults = search
     ? approvedMembers.filter(m =>
         m.full_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -77,10 +98,15 @@ export default function Genealogy() {
                 <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                 {formatTime(status.secondsLeft)}
               </span>
+            ) : status.secondsLeft > 0 ? (
+              <span className="flex items-center gap-1 font-medium">
+                <span className="w-2 h-2 rounded-full bg-white/70" />
+                {formatTime(status.secondsLeft)}
+              </span>
             ) : (
               <span className="flex items-center gap-1 font-medium">
                 <span className="w-2 h-2 rounded-full bg-white/70" />
-                No maint.
+                Expired
               </span>
             )}
             <span className="font-medium">L{treeLevel} · {slots}</span>

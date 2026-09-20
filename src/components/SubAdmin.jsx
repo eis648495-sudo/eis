@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Users, ArrowRight, Ticket } from "lucide-react";
 import { useTable, useCurrentMember } from "../lib/useData";
-import { formatDate, money } from "../lib/helpers";
+import { formatDate, money, maintenanceStatus, formatTime } from "../lib/helpers";
 import { Button, Badge } from "./ui";
 
 export default function SubAdmin() {
@@ -101,19 +101,25 @@ export default function SubAdmin() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead><tr className="border-b border-gray-100">
-              {["Name", "Username", "Status", "Referral Code", "Joined"].map(h => <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>)}
+              {["Name", "Username", "Status", "Maintenance", "Referral Code", "Joined"].map(h => <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>)}
             </tr></thead>
             <tbody>
-              {managedMembers.length === 0 ? <tr><td colSpan="5" className="text-center py-12 text-gray-400">No members assigned to you</td></tr> :
-              managedMembers.map(m => (
+              {managedMembers.length === 0 ? <tr><td colSpan="6" className="text-center py-12 text-gray-400">No members assigned to you</td></tr> :
+              managedMembers.map(m => {
+                const mStatus = maintenanceStatus(m, codes);
+                return (
                 <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{m.full_name}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">@{m.username}</td>
                   <td className="px-6 py-4"><Badge className={m.status === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>{m.status}</Badge></td>
+                  <td className="px-6 py-4">
+                    <span className={`text-sm font-medium ${mStatus.isGreen ? "text-green-700" : "text-red-700"}`}>{mStatus.secondsLeft > 0 ? formatTime(mStatus.secondsLeft) : "Expired"}</span>
+                  </td>
                   <td className="px-6 py-4 text-sm font-mono text-gray-600">{m.referral_code || "—"}</td>
                   <td className="px-6 py-4 text-sm text-gray-400">{formatDate(m.created_date || m.created_at, "MMM d, yyyy")}</td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

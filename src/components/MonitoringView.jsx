@@ -144,7 +144,7 @@ export default function MonitoringView({ member, members, codes }) {
                     ) : (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 rounded-lg">
                         <AlertCircle className="w-3.5 h-3.5 text-red-600" />
-                        <span className="text-sm font-medium text-red-700">Inactive</span>
+                        <span className="text-sm font-medium text-red-700">{status.secondsLeft > 0 ? formatTime(status.secondsLeft) : "Expired"}</span>
                       </div>
                     )}
                   </div>
