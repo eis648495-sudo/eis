@@ -1221,6 +1221,10 @@ export default function Admin() {
               {/* Change Password */}
               <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Change Password</h2>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
+                  <p className="text-xs font-bold text-orange-600 uppercase tracking-wide mb-1">Current Password</p>
+                  <p className="text-lg font-bold text-gray-900">{profileMember.password || "—"}</p>
+                </div>
                 <div>
                   <Label>New Password</Label>
                   <Input value={profileForm.password || ""} onChange={e => setProfileForm({ ...profileForm, password: e.target.value })} type="password" placeholder="Leave blank to keep current password" />
