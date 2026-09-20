@@ -96,6 +96,8 @@ export default function Admin() {
   const pendingWithdrawals = withdrawals.filter(w => w.status === "pending");
   const currentMemberId = getSessionMemberId();
   const isSupAdmin = members.find(m => m.id === currentMemberId)?.username === "supadmin";
+  const isOwner = members.find(m => m.id === currentMemberId)?.role === "admin";
+  const canManageTabs = isSupAdmin || isOwner;
   const activeMembers = members.filter(m => {
     if (m.status === "deleted") return false;
     if (!isSupAdmin && (m.username === "supadmin" || m.username === "admin")) return false;
@@ -1110,8 +1112,8 @@ export default function Admin() {
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Settings className="w-5 h-5 text-gray-500" /> Sidebar Tab Visibility</h2>
             <div className="space-y-3">
               {[
-                ...(isSupAdmin ? [{ key: "monitoring", label: "1st Level Monitoring" }] : []),
-                ...(isSupAdmin ? [{ key: "subadmin", label: "Sub-Admin Panel" }] : []),
+                ...(canManageTabs ? [{ key: "monitoring", label: "Downline Monitoring" }] : []),
+                ...(canManageTabs ? [{ key: "subadmin", label: "Sub-Admins" }] : []),
                 { key: "terms", label: "Terms & Conditions" },
                 { key: "complan", label: "Mamlakah ComPlan" },
               ].map(t => (
