@@ -660,7 +660,7 @@ export default function Admin() {
                     const usedBy = members.find(m => m.id === c.used_by_member_id);
                     return (
                       <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm font-mono font-bold text-gray-900">{c.code}</td>
+                        <td onClick={() => copyCode(c.code)} className="px-6 py-4 text-sm font-mono font-bold text-gray-900 cursor-pointer hover:text-amber-600 transition-colors select-none" title="Click to copy">{c.code}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">{c.assigned_username ? `@${c.assigned_username}` : "—"}</td>
                         <td className="px-6 py-4"><Badge className={c.is_used ? "bg-gray-100 text-gray-500" : "bg-green-100 text-green-700"}>{c.is_used ? "Used" : "Available"}</Badge></td>
                         <td className="px-6 py-4 text-sm text-gray-600">{usedBy?.username || "—"}</td>
