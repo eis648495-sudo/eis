@@ -30,7 +30,9 @@ export default function Admin() {
   const [profileSearchOpen, setProfileSearchOpen] = useState(false);
   const [profileForm, setProfileForm] = useState(null);
   const [savingProfile, setSavingProfile] = useState(false);
-  const [newCode, setNewCode] = useState({ count: "1", description: "", assignedUsername: "" });
+  const [newCode, setNewCode] = useState({ count: "1", assignedUsername: "" });
+  const [assignedSearch, setAssignedSearch] = useState("");
+  const [assignedOpen, setAssignedOpen] = useState(false);
   const [gcash, setGcash] = useState({ gcash_number: "", gcash_name: "" });
   const [minAmount, setMinAmount] = useState("300");
   const [savingMin, setSavingMin] = useState(false);
@@ -46,7 +48,7 @@ export default function Admin() {
   const [transferring, setTransferring] = useState(false);
 
   const { data: members = [] } = useTable("members");
-  const { data: codes = [] } = useTable("maintenance_codes");
+  const { data: codes = [], refetch: refetchCodes } = useTable("maintenance_codes");
   const { data: withdrawals = [] } = useTable("conversion_requests");
   const { data: gcashInfo = [] } = useTable("gcash_info");
   const { data: settings = [] } = useTable("system_settings");
@@ -152,16 +154,18 @@ export default function Admin() {
     try {
       const records = [];
       for (let i = 0; i < count; i++) {
+        const base = "MAINT-" + generateReferralCode();
+        const code = newCode.assignedUsername ? `${base}-@${newCode.assignedUsername.toUpperCase()}` : base;
         records.push({
-          code: "MAINT-" + generateReferralCode(),
+          code,
           is_used: false,
-          description: newCode.description || null,
           assigned_username: newCode.assignedUsername || null,
         });
       }
       await supabase.from("maintenance_codes").insert(records);
       toast.success(`${count} code(s) generated!`);
-      setNewCode({ ...newCode, description: "", assignedUsername: "" });
+      setNewCode({ ...newCode, assignedUsername: "" });
+      refetchCodes();
     } catch { toast.error("Failed to generate codes"); }
   }
 
@@ -261,7 +265,7 @@ export default function Admin() {
     try {
       const member = redeemModal;
       const { data: found, error } = await supabase
-        .from("maintenance_codes").select("*").eq("code", redeemCode.toUpperCase()).eq("is_used", false).limit(1);
+        .from("maintenance_codes").select("*").ilike("code", redeemCode.replace(/[%_\\]/g, c => `\\${c}`)).eq("is_used", false).limit(1);
       if (error || !found?.length) { toast.error("Invalid or already used code"); setRedeemBusy(false); return; }
       const codeRecord = found[0];
       if (codeRecord.assigned_username && codeRecord.assigned_username !== member.username) {
@@ -634,17 +638,57 @@ export default function Admin() {
         <div className="space-y-6">
           <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Plus className="w-5 h-5 text-amber-500" /> Generate Maintenance Codes</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label>Count</Label><Input type="number" value={newCode.count} onChange={e => setNewCode({ ...newCode, count: e.target.value })} /></div>
-              <div>
+              <div className="relative">
                 <Label>Assign To (optional — locks code to this user)</Label>
-                <select value={newCode.assignedUsername} onChange={e => setNewCode({ ...newCode, assignedUsername: e.target.value })}
-                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20">
-                  <option value="">Anyone (no lock)</option>
-                  {activeMembers.map(m => <option key={m.id} value={m.username}>{m.full_name} (@{m.username})</option>)}
-                </select>
+                {newCode.assignedUsername && !assignedOpen ? (
+                  <div className="flex items-center justify-between w-full h-12 rounded-xl border border-gray-200 px-4 bg-white">
+                    <span className="text-sm font-medium text-gray-900">
+                      {activeMembers.find(m => m.username === newCode.assignedUsername)?.full_name || ""} <span className="text-gray-400">(@{newCode.assignedUsername})</span>
+                    </span>
+                    <button type="button" onClick={() => { setNewCode({ ...newCode, assignedUsername: "" }); setAssignedSearch(""); setAssignedOpen(true); }} className="text-gray-400 hover:text-red-500"><X className="w-4 h-4" /></button>
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={assignedSearch}
+                    onChange={e => { setAssignedSearch(e.target.value); setAssignedOpen(true); }}
+                    onFocus={() => setAssignedOpen(true)}
+                    onBlur={() => setTimeout(() => setAssignedOpen(false), 200)}
+                    placeholder={newCode.assignedUsername ? "Search to change..." : "Search username or name..."}
+                    className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                  />
+                )}
+                {assignedOpen && (
+                  <div className="absolute z-10 mt-1 w-full max-h-60 overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-lg">
+                    <button type="button" onClick={() => { setNewCode({ ...newCode, assignedUsername: "" }); setAssignedSearch(""); setAssignedOpen(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-amber-50 transition-colors ${!newCode.assignedUsername ? "bg-amber-50 font-medium text-amber-700" : "text-gray-600"}`}>
+                      Anyone (no lock)
+                    </button>
+                    {activeMembers
+                      .filter(m => {
+                        if (!assignedSearch) return true;
+                        const q = assignedSearch.toLowerCase();
+                        return (m.full_name || "").toLowerCase().includes(q) || (m.username || "").toLowerCase().includes(q);
+                      })
+                      .slice(0, 50)
+                      .map(m => (
+                        <button key={m.id} type="button"
+                          onClick={() => { setNewCode({ ...newCode, assignedUsername: m.username }); setAssignedSearch(""); setAssignedOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-sm hover:bg-amber-50 transition-colors ${newCode.assignedUsername === m.username ? "bg-amber-50 font-medium text-amber-700" : "text-gray-700"}`}>
+                          {m.full_name} <span className="text-gray-400">(@{m.username})</span>
+                        </button>
+                      ))}
+                    {assignedSearch && activeMembers.filter(m => {
+                      const q = assignedSearch.toLowerCase();
+                      return (m.full_name || "").toLowerCase().includes(q) || (m.username || "").toLowerCase().includes(q);
+                    }).length === 0 && (
+                      <p className="px-4 py-3 text-sm text-gray-400">No members found</p>
+                    )}
+                  </div>
+                )}
               </div>
-              <div><Label>Description</Label><Input value={newCode.description} onChange={e => setNewCode({ ...newCode, description: e.target.value })} placeholder="optional" /></div>
             </div>
             <Button onClick={generateCodes} className="mt-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white"><Plus className="w-4 h-4 mr-2" /> Generate Codes</Button>
           </div>
@@ -659,7 +703,7 @@ export default function Admin() {
                     const usedBy = members.find(m => m.id === c.used_by_member_id);
                     return (
                       <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm font-mono font-bold text-gray-900">{c.code}</td>
+                        <td onClick={() => copyCode(c.code)} className="px-6 py-4 text-sm font-mono font-bold text-gray-900 cursor-pointer hover:text-amber-600 transition-colors select-none" title="Click to copy">{c.code}</td>
                         <td className="px-6 py-4 text-sm text-gray-600">{c.assigned_username ? `@${c.assigned_username}` : "—"}</td>
                         <td className="px-6 py-4"><Badge className={c.is_used ? "bg-gray-100 text-gray-500" : "bg-green-100 text-green-700"}>{c.is_used ? "Used" : "Available"}</Badge></td>
                         <td className="px-6 py-4 text-sm text-gray-600">{usedBy?.username || "—"}</td>
@@ -1221,6 +1265,10 @@ export default function Admin() {
               {/* Change Password */}
               <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">Change Password</h2>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
+                  <p className="text-xs font-bold text-orange-600 uppercase tracking-wide mb-1">Current Password</p>
+                  <p className="text-lg font-bold text-gray-900">{profileMember.password || "—"}</p>
+                </div>
                 <div>
                   <Label>New Password</Label>
                   <Input value={profileForm.password || ""} onChange={e => setProfileForm({ ...profileForm, password: e.target.value })} type="password" placeholder="Leave blank to keep current password" />

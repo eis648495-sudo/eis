@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { User, Lock, ArrowLeft, UserPlus, Eye, EyeOff } from "lucide-react";
+import { User, Lock, ArrowLeft, UserPlus, Eye, EyeOff, GitBranch } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "../lib/supabase";
 import { saveMemberSession } from "../lib/auth";
@@ -17,6 +17,15 @@ export default function Register() {
   const [form, setForm] = useState({ username: "", password: "", confirm_password: "" });
   const [showPwd, setShowPwd] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [referrerInfo, setReferrerInfo] = useState(null);
+
+  useEffect(() => {
+    if (!ref) return;
+    (async () => {
+      const { data } = await supabase.from("members").select("username,referral_code,full_name").eq("referral_code", ref).limit(1);
+      if (data?.[0]) setReferrerInfo(data[0]);
+    })();
+  }, [ref]);
 
   async function submit(e) {
     e.preventDefault();
@@ -77,6 +86,18 @@ export default function Register() {
             <h1 className="text-2xl font-bold text-white">Mamlakah Registration Form</h1>
           </div>
           <form onSubmit={submit} className="p-8 space-y-5">
+            {referrerInfo && (
+              <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <GitBranch className="w-5 h-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-amber-600 font-medium">Referred by</p>
+                  <p className="text-sm font-bold text-gray-900 truncate">@{referrerInfo.username}</p>
+                  <p className="text-xs text-gray-500">Referral Code: {referrerInfo.referral_code}</p>
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Username *</Label>
               <div className="relative">

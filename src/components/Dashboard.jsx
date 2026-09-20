@@ -70,7 +70,7 @@ export default function Dashboard() {
     try {
       // Find the code
       const { data: found, error } = await supabase
-        .from("maintenance_codes").select("*").eq("code", code.toUpperCase()).eq("is_used", false).limit(1);
+        .from("maintenance_codes").select("*").ilike("code", code.replace(/[%_\\]/g, c => `\\${c}`)).eq("is_used", false).limit(1);
       if (error || !found?.length) {
         toast.error("Invalid or already used code");
         setRedeemBusy(false);
@@ -329,7 +329,7 @@ export default function Dashboard() {
             {myRedeemedCodes.length > 0 && (
               <div className="mt-5 border-t border-gray-100 pt-4">
                 <p className="text-sm font-bold text-gray-700 mb-2">Redeemed Codes History</p>
-                <div className="space-y-2 max-h-[100px] overflow-y-auto">
+                <div className="space-y-2 max-h-20 overflow-y-auto">
                   {myRedeemedCodes.map(c => (
                     <div key={c.id} className="flex items-center justify-between bg-teal-50 rounded-lg px-3 py-2">
                       <code className="font-mono text-sm font-bold text-gray-900">{c.code}</code>

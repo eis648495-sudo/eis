@@ -56,12 +56,6 @@ export default function Genealogy() {
       )
     : [];
 
-  function getDownlines(memberId, level = 1) {
-    if (level > 5) return [];
-    const direct = approvedMembers.filter(m => m.referrer_id === memberId);
-    return direct.map(d => ({ ...d, _level: level, _children: getDownlines(d.id, level + 1) }));
-  }
-
   const TreeNode = useCallback(function TreeNode({ member, level = 0 }) {
     const downlines = approvedMembers.filter(m => m.referrer_id === member.id);
     const isRoot = level === 0;
@@ -71,7 +65,7 @@ export default function Genealogy() {
     const treeLevel = member.tree_level || level;
 
     return (
-      <div className={`flex flex-col items-center ${level > 0 ? "mt-10" : ""}`}>
+      <div className="flex flex-col items-center">
         {/* Node card */}
         <div
           onClick={() => setSelected(member)}
@@ -113,29 +107,37 @@ export default function Genealogy() {
           </div>
         </div>
 
-        {/* Children */}
+        {/* Children with T-junction connectors */}
         {downlines.length > 0 && (
-          <div className="relative flex flex-wrap justify-center gap-4">
-            {/* Vertical line down from parent */}
-            <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-0.5 h-10 bg-blue-500" />
-            {/* Horizontal connector line above children */}
-            {downlines.length > 1 && (
-              <div
-                className="absolute -top-4 h-0.5 bg-blue-500"
-                style={{
-                  left: `calc(50% - ${Math.min(downlines.length, 10) * 88}px)`,
-                  width: `${Math.min(downlines.length, 10) * 176}px`,
-                }}
-              />
-            )}
-            {downlines.slice(0, 10).map(d => (
-              <div key={d.id} className="relative flex flex-col items-center">
-                {/* Vertical line up to horizontal connector */}
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-0.5 h-4 bg-blue-500" />
-                <TreeNode member={d} level={level + 1} />
-              </div>
-            ))}
-          </div>
+          <>
+            {/* Vertical line from parent bottom to horizontal bar */}
+            <div className="w-0.5 h-6 bg-[#2196F3]" />
+            {/* Children row — horizontal bar sits at the top */}
+            <div className="flex flex-nowrap justify-center gap-4">
+              {downlines.slice(0, 10).map((d, i, arr) => {
+                const isOnly = arr.length === 1;
+                const isFirst = i === 0;
+                const isLast = i === arr.length - 1;
+                return (
+                  <div key={d.id} className="relative flex flex-col items-center">
+                    {/* Horizontal bar segment — bridges the gap to adjacent children */}
+                    {!isOnly && (
+                      <div
+                        className="absolute top-0 h-0.5 bg-[#2196F3]"
+                        style={{
+                          left: isFirst ? '50%' : '-8px',
+                          right: isLast ? '50%' : '-8px',
+                        }}
+                      />
+                    )}
+                    {/* Vertical drop from horizontal bar to child card */}
+                    <div className="w-0.5 h-6 bg-[#2196F3]" />
+                    <TreeNode member={d} level={level + 1} />
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     );
@@ -236,7 +238,7 @@ export default function Genealogy() {
         </div>
 
         {/* Right: Tree visualization */}
-        <div className="flex-1 min-h-[500px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="flex-1 min-h-[700px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           {/* Zoom controls */}
           <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100">
             <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -244,7 +246,7 @@ export default function Genealogy() {
               <span>Network tree — <strong className="text-gray-700">{selected?.username || selected?.full_name || "—"}</strong></span>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setZoom(z => Math.max(50, z - 10))} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-gray-600">
+              <button onClick={() => setZoom(z => Math.max(10, z - 10))} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-gray-600">
                 <ZoomOut className="w-4 h-4" />
               </button>
               <span className="text-sm font-medium text-gray-600 w-12 text-center">{zoom}%</span>
@@ -264,20 +266,6 @@ export default function Genealogy() {
         </div>
       </div>
 
-      {/* Downline stats */}
-      {selected && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 grid grid-cols-2 sm:grid-cols-5 gap-4">
-          {[1, 2, 3, 4, 5].map(level => {
-            const count = getDownlines(selected.id, level).length;
-            return (
-              <div key={level} className="bg-white rounded-2xl shadow border border-gray-100 p-4 text-center">
-                <p className="text-3xl font-bold text-gray-900">{count}</p>
-                <p className="text-sm text-gray-500 mt-1">Level {level}</p>
-              </div>
-            );
-          })}
-        </motion.div>
-      )}
     </div>
   );
 }
