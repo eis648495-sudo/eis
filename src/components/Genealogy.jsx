@@ -110,25 +110,30 @@ export default function Genealogy() {
         {/* Children */}
         {downlines.length > 0 && (
           <div className="relative flex flex-nowrap justify-center gap-4">
-            {/* Vertical line down from parent */}
-            <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-0.5 h-10 bg-blue-500" />
-            {/* Horizontal connector line above children */}
-            {downlines.length > 1 && (
-              <div
-                className="absolute -top-4 h-0.5 bg-blue-500"
-                style={{
-                  left: `calc(50% - ${(Math.min(downlines.length, 10) - 1) * 96}px)`,
-                  width: `${(Math.min(downlines.length, 10) - 1) * 192}px`,
-                }}
-              />
-            )}
-            {downlines.slice(0, 10).map(d => (
-              <div key={d.id} className="relative flex flex-col items-center">
-                {/* Vertical line up to horizontal connector */}
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-0.5 h-4 bg-blue-500" />
-                <TreeNode member={d} level={level + 1} />
-              </div>
-            ))}
+            {/* Vertical line from parent down to horizontal connector */}
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-0.5 h-6 bg-blue-500" />
+            {downlines.slice(0, 10).map((d, i, arr) => {
+              const isOnly = arr.length === 1;
+              const isFirst = i === 0;
+              const isLast = i === arr.length - 1;
+              return (
+                <div key={d.id} className="relative flex flex-col items-center">
+                  {/* Horizontal connector segment — meets adjacent segments across the gap */}
+                  {!isOnly && (
+                    <div
+                      className="absolute -top-4 h-0.5 bg-blue-500"
+                      style={{
+                        left: isFirst ? '50%' : '-8px',
+                        right: isLast ? '50%' : '-8px',
+                      }}
+                    />
+                  )}
+                  {/* Vertical line from connector down to child */}
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-0.5 h-4 bg-blue-500" />
+                  <TreeNode member={d} level={level + 1} />
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

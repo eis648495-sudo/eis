@@ -23,30 +23,33 @@ export function MaintenanceBanner() {
   const { isGreen, secondsLeft, neverRedeemed } = status;
 
   return (
-    <div className={`w-full py-2.5 px-4 flex items-center justify-center gap-3 font-semibold text-white ${isGreen ? "bg-green-500" : "bg-red-500"}`}>
-      <span className="inline-block w-3 h-3 rounded-full bg-white animate-pulse flex-shrink-0" />
-      {isGreen ? (
-        <>
+    <div className={`w-full py-3 sm:py-2.5 px-4 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 font-semibold text-white ${isGreen ? "bg-green-500" : "bg-red-500"}`}>
+      {/* Status text */}
+      <div className="flex items-center gap-2 sm:gap-3 text-center">
+        <span className="inline-block w-3 h-3 rounded-full bg-white animate-pulse flex-shrink-0" />
+        {isGreen ? (
           <CheckCircle className="w-5 h-5 flex-shrink-0" />
-          <span className="text-sm">Maintenance Active — Expires in:</span>
-          <span className="font-mono bg-green-700 px-3 py-1 rounded-lg text-white tracking-widest text-lg font-bold">{formatTime(secondsLeft)}</span>
-          <span className="text-green-100 font-normal text-xs">720 Hours</span>
-        </>
-      ) : (
-        <>
+        ) : (
           <AlertCircle className="w-5 h-5 flex-shrink-0 animate-pulse" />
-          <span className="text-sm font-bold">⚠ Maintenance Inactive — Redeem a code to activate & start earning!</span>
-          {secondsLeft > 0 ? (
-            <>
-              <span className="text-red-100 text-sm">Expires in:</span>
-              <span className="font-mono bg-red-700 px-3 py-1 rounded-lg text-white tracking-widest text-lg font-bold">{formatTime(secondsLeft)}</span>
-              <span className="text-red-100 font-normal text-xs">120 Hours</span>
-            </>
-          ) : (
-            <span className="font-mono bg-red-700 px-3 py-1 rounded-lg text-white tracking-widest text-lg font-bold">EXPIRED</span>
-          )}
-        </>
-      )}
+        )}
+        <span className="text-sm font-bold">
+          {isGreen ? "Maintenance Active — Expires in:" : "⚠ Maintenance Inactive — Redeem a code to activate & start earning!"}
+        </span>
+      </div>
+      {/* Timer */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {!isGreen && secondsLeft > 0 && (
+          <span className="text-red-100 text-sm">Expires in:</span>
+        )}
+        <span className={`font-mono px-3 py-1 rounded-lg text-white tracking-widest text-lg font-bold ${isGreen ? "bg-green-700" : "bg-red-700"}`}>
+          {isGreen || secondsLeft > 0 ? formatTime(secondsLeft) : "EXPIRED"}
+        </span>
+        {(isGreen || secondsLeft > 0) && (
+          <span className={`font-normal text-xs ${isGreen ? "text-green-100" : "text-red-100"}`}>
+            {isGreen ? "720 Hours" : "120 Hours"}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
