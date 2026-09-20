@@ -153,7 +153,7 @@ export default function Admin() {
       const records = [];
       for (let i = 0; i < count; i++) {
         const base = "MAINT-" + generateReferralCode();
-        const code = newCode.assignedUsername ? `${base}-@${newCode.assignedUsername}` : base;
+        const code = newCode.assignedUsername ? `${base}-@${newCode.assignedUsername.toUpperCase()}` : base;
         records.push({
           code,
           is_used: false,
@@ -263,7 +263,7 @@ export default function Admin() {
     try {
       const member = redeemModal;
       const { data: found, error } = await supabase
-        .from("maintenance_codes").select("*").eq("code", redeemCode.toUpperCase()).eq("is_used", false).limit(1);
+        .from("maintenance_codes").select("*").ilike("code", redeemCode.replace(/[%_\\]/g, c => `\\${c}`)).eq("is_used", false).limit(1);
       if (error || !found?.length) { toast.error("Invalid or already used code"); setRedeemBusy(false); return; }
       const codeRecord = found[0];
       if (codeRecord.assigned_username && codeRecord.assigned_username !== member.username) {

@@ -70,7 +70,7 @@ export default function Dashboard() {
     try {
       // Find the code
       const { data: found, error } = await supabase
-        .from("maintenance_codes").select("*").eq("code", code.toUpperCase()).eq("is_used", false).limit(1);
+        .from("maintenance_codes").select("*").ilike("code", code.replace(/[%_\\]/g, c => `\\${c}`)).eq("is_used", false).limit(1);
       if (error || !found?.length) {
         toast.error("Invalid or already used code");
         setRedeemBusy(false);
