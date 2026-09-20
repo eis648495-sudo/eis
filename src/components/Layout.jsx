@@ -62,13 +62,8 @@ export default function Layout({ children, currentPageName }) {
     return true;
   });
   if (isAdmin || isSupAdmin) items = [...items, ...ADMIN_ITEMS];
-  if (isSubAdmin) items = [...items, ...SUBADMIN_ITEMS];
+  if (isSubAdmin && showSubAdmin) items = [...items, ...SUBADMIN_ITEMS];
   if (isSupAdmin) items = [...items, ...SUPADMIN_ITEMS];
-  if (isAdmin || showSubAdmin) {
-    if (!isSubAdmin && !isAdmin) {
-      // no sub-admin for regular members
-    }
-  }
 
   function handleLogout() {
     clearMemberSession();

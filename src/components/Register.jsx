@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { User, Lock, ArrowLeft, UserPlus, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "../lib/supabase";
+import { saveMemberSession } from "../lib/auth";
 import { generateReferralCode } from "../lib/helpers";
 import { Button, Input, Label } from "./ui";
 
@@ -40,19 +41,24 @@ export default function Register() {
         const { data: referrer } = await supabase.from("members").select("id").eq("referral_code", ref).limit(1);
         if (referrer?.[0]) referrerId = referrer[0].id;
       }
-      const { error } = await supabase.from("members").insert({
-        username: form.username,
-        password: form.password,
-        full_name: form.username,
-        referral_code: generateReferralCode(),
-        referrer_id: referrerId,
-        status: "approved",
-        role: "member",
-        tree_level: 0,
-      });
+      const { data: newMember, error } = await supabase
+        .from("members")
+        .insert({
+          username: form.username,
+          password: form.password,
+          full_name: form.username,
+          referral_code: generateReferralCode(),
+          referrer_id: referrerId,
+          status: "approved",
+          role: "member",
+          tree_level: 0,
+        })
+        .select()
+        .single();
       if (error) throw error;
-      toast.success("Registration submitted! Admin will review your account.");
-      nav("/MemberLogin");
+      saveMemberSession(newMember.id);
+      toast.success(`Welcome, ${newMember.full_name}!`);
+      nav("/Dashboard");
     } catch (err) {
       toast.error(err.message || "Registration failed");
     }
