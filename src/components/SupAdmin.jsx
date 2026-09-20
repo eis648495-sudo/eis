@@ -4,11 +4,12 @@ import { Crown, Search, Shield, UserCog } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, updateRecord } from "../lib/useData";
 import { Button, Input, Badge } from "./ui";
-import { money, formatDate } from "../lib/helpers";
+import { money, formatDate, maintenanceStatus, formatTime } from "../lib/helpers";
 
 export default function SupAdmin() {
   const [search, setSearch] = useState("");
   const { data: members = [] } = useTable("members");
+  const { data: codes = [] } = useTable("maintenance_codes");
 
   const activeMembers = members.filter(m => m.status !== "deleted");
   const adminMembers = members.filter(m => m.role === "admin");
@@ -73,17 +74,20 @@ export default function SupAdmin() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead><tr className="border-b border-gray-100">
-              {["Name", "Username", "Role", "Status", "Actions"].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>)}
+              {["Name", "Username", "Role", "Status", "Maintenance", "Actions"].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>)}
             </tr></thead>
             <tbody>
               {filteredMembers.length === 0 ? (
-                <tr><td colSpan="5" className="text-center py-12 text-gray-400">No members found</td></tr>
-              ) : filteredMembers.map(m => (
+                <tr><td colSpan="6" className="text-center py-12 text-gray-400">No members found</td></tr>
+              ) : filteredMembers.map(m => {
+                const mStatus = maintenanceStatus(m, codes);
+                return (
                 <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{m.full_name}</td>
                   <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">@{m.username}</td>
                   <td className="px-4 py-3"><Badge className="bg-gray-100 text-gray-600 capitalize">{m.role}</Badge></td>
                   <td className="px-4 py-3"><Badge className={m.status === "approved" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>{m.status}</Badge></td>
+                  <td className="px-4 py-3"><span className={`text-sm font-medium whitespace-nowrap ${mStatus.isGreen ? "text-green-700" : "text-red-700"}`}>{mStatus.secondsLeft > 0 ? formatTime(mStatus.secondsLeft) : "Expired"}</span></td>
                   <td className="px-4 py-3">
                     {m.role === "admin" ? (
                       <Button onClick={() => demoteToMember(m.id)} size="sm" variant="outline" className="border-purple-200 text-purple-600 hover:bg-purple-50 h-8 px-3 text-xs">Remove Admin</Button>
@@ -92,7 +96,8 @@ export default function SupAdmin() {
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

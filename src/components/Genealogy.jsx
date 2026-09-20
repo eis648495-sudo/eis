@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { GitBranch, Search, ArrowRight, Users, ZoomIn, ZoomOut, User, Clock, Activity } from "lucide-react";
@@ -25,7 +25,28 @@ export default function Genealogy() {
     if (currentMember && !selected) setSelected(currentMember);
   }, [currentMember]);
 
-  const approvedMembers = members.filter(m => m.status === "approved");
+  const allApproved = members.filter(m => m.status === "approved");
+  const isSuperAdmin = currentMember?.username === "supadmin" || currentMember?.username === "admin";
+
+  // Non-super-admin viewers only see their own downline tree — supadmin, admin,
+  // and crosslines (members outside their downline lineage) are hidden.
+  const visibleIds = useMemo(() => {
+    if (isSuperAdmin || !currentMember) return null;
+    const ids = new Set([currentMember.id]);
+    const stack = [currentMember.id];
+    while (stack.length) {
+      const id = stack.pop();
+      allApproved.filter(m => m.referrer_id === id).forEach(m => {
+        if (!ids.has(m.id)) { ids.add(m.id); stack.push(m.id); }
+      });
+    }
+    return ids;
+  }, [isSuperAdmin, currentMember, allApproved]);
+
+  const approvedMembers = visibleIds
+    ? allApproved.filter(m => visibleIds.has(m.id))
+    : allApproved;
+
   const searchResults = search
     ? approvedMembers.filter(m =>
         m.full_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -77,10 +98,15 @@ export default function Genealogy() {
                 <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                 {formatTime(status.secondsLeft)}
               </span>
+            ) : status.secondsLeft > 0 ? (
+              <span className="flex items-center gap-1 font-medium">
+                <span className="w-2 h-2 rounded-full bg-white/70" />
+                {formatTime(status.secondsLeft)}
+              </span>
             ) : (
               <span className="flex items-center gap-1 font-medium">
                 <span className="w-2 h-2 rounded-full bg-white/70" />
-                No maint.
+                Expired
               </span>
             )}
             <span className="font-medium">L{treeLevel} · {slots}</span>
@@ -141,7 +167,7 @@ export default function Genealogy() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-6">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl">
@@ -166,9 +192,9 @@ export default function Genealogy() {
         </div>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col lg:flex-row gap-4">
         {/* Left: Members list panel */}
-        <div className="w-64 flex-shrink-0 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden h-fit sticky top-4">
+        <div className="w-full lg:w-56 flex-shrink-0 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden h-fit lg:sticky lg:top-4">
           <div className="p-3 border-b border-gray-100">
             <h3 className="font-bold text-gray-900 flex items-center gap-2"><Users className="w-4 h-4 text-gray-500" /> Members</h3>
           </div>
@@ -183,7 +209,7 @@ export default function Genealogy() {
               />
             </div>
           </div>
-          <div className="max-h-[500px] overflow-y-auto">
+          <div className="max-h-[260px] lg:max-h-[600px] overflow-y-auto">
             {(search ? searchResults : approvedMembers).map(m => {
               const status = maintenanceStatus(m, codes);
               const isActive = status.isGreen;
@@ -210,7 +236,7 @@ export default function Genealogy() {
         </div>
 
         {/* Right: Tree visualization */}
-        <div className="flex-1 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="flex-1 min-h-[500px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           {/* Zoom controls */}
           <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100">
             <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -227,7 +253,7 @@ export default function Genealogy() {
               </button>
             </div>
           </div>
-          <div className="p-8 overflow-auto" style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center', transition: 'transform 0.2s' }}>
+          <div className="p-4 overflow-auto" style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center', transition: 'transform 0.2s' }}>
             {selected ? <TreeNode member={selected} /> : (
               <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                 <Users className="w-12 h-12 mb-3 text-gray-300" />
