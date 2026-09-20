@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { User, Lock, ArrowLeft, UserPlus, Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "../lib/supabase";
+import { saveMemberSession } from "../lib/auth";
 import { generateReferralCode } from "../lib/helpers";
 import { Button, Input, Label } from "./ui";
 
