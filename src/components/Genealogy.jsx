@@ -76,8 +76,8 @@ export default function Genealogy() {
           onClick={() => setSelected(member)}
           className={`group cursor-pointer relative w-48 rounded-2xl px-3.5 py-3.5 transition-all duration-300 hover:scale-105 hover:shadow-2xl border-2 ${
             isActive
-              ? "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 border-emerald-300/50 text-white shadow-lg shadow-emerald-500/30"
-              : "bg-gradient-to-br from-rose-500 via-red-500 to-rose-600 border-rose-300/50 text-white shadow-lg shadow-rose-500/30"
+              ? "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 border-emerald-300/50 text-white"
+              : "bg-gradient-to-br from-rose-500 via-red-500 to-rose-600 border-rose-300/50 text-white"
           } ${isRoot ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-gray-50" : ""}`}
         >
           {/* Subtle inner glow overlay */}
@@ -315,7 +315,7 @@ export default function Genealogy() {
         </div>
 
         {/* Right: Tree visualization */}
-        <div className="flex-1 min-h-[700px] bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 overflow-hidden" style={{ backgroundImage: "radial-gradient(circle, #d1d5db 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
+        <div className="flex-1 min-h-[700px] bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
           {/* Zoom controls */}
           <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100">
             <div className="flex items-center gap-2 text-sm text-gray-500">
