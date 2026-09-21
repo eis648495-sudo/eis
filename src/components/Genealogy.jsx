@@ -334,13 +334,15 @@ export default function Genealogy() {
               </button>
             </div>
           </div>
-          <div className="p-4 overflow-auto" style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center', transition: 'transform 0.2s' }}>
-            {selected ? <TreeNode member={selected} /> : (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                <Users className="w-12 h-12 mb-3 text-gray-300" />
-                <p className="text-sm">No genealogy data available</p>
-              </div>
-            )}
+          <div className="p-4 overflow-auto">
+            <div style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center', transition: 'transform 0.2s' }}>
+              {selected ? <TreeNode member={selected} /> : (
+                <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                  <Users className="w-12 h-12 mb-3 text-gray-300" />
+                  <p className="text-sm">No genealogy data available</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
