@@ -80,14 +80,14 @@ export function GCashButton() {
     <>
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-4 right-4 left-auto lg:bottom-16 lg:right-6 z-50 h-12 lg:h-14 pl-4 pr-5 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg lg:shadow-xl flex items-center gap-2 hover:scale-105 transition-transform"
+        className="fixed bottom-8 right-4 left-auto lg:bottom-16 lg:right-6 z-50 h-12 lg:h-14 pl-4 pr-5 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg lg:shadow-xl flex items-center gap-2"
         title="GCash Payment"
       >
         <Smartphone className="w-5 h-5 lg:w-6 lg:h-6" />
         <span className="font-bold text-sm tracking-wide">GCASH<span className="hidden lg:inline"> PAYMENT</span></span>
       </button>
       {open && (
-        <div className="fixed bottom-20 right-4 left-auto lg:bottom-32 lg:right-6 z-50 w-80 max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+        <div className="fixed bottom-24 right-4 left-auto lg:bottom-32 lg:right-6 z-50 w-80 max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-white/20 rounded-lg">
