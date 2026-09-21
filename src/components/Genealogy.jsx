@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { GitBranch, Search, ArrowRight, Users, ZoomIn, ZoomOut, User, Clock, Activity } from "lucide-react";
-import { useTable, useCurrentMember } from "../lib/useData";
+import { GitBranch, Search, ArrowRight, Users, ZoomIn, ZoomOut, User, Clock, Activity, UserPlus, X } from "lucide-react";
+import { useTable, useCurrentMember, updateRecord } from "../lib/useData";
 import { Button } from "./ui";
 import { maintenanceStatus, formatTime } from "../lib/helpers";
+import toast from "react-hot-toast";
 
 export default function Genealogy() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [zoom, setZoom] = useState(100);
+  const [placementTarget, setPlacementTarget] = useState(null);
+  const [placing, setPlacing] = useState(false);
   const [, setTick] = useState(0);
   const { data: members = [], isLoading } = useTable("members");
   const { data: codes = [] } = useTable("maintenance_codes");
@@ -26,6 +29,7 @@ export default function Genealogy() {
   }, [currentMember]);
 
   const allApproved = members.filter(m => m.status === "approved");
+  const lobbyMembers = members.filter(m => m.status === "pending" && m.referrer_id === currentMember?.id);
   const isSuperAdmin = currentMember?.username === "supadmin" || currentMember?.username === "admin";
 
   // Non-super-admin viewers only see their own downline tree — supadmin, admin,
@@ -36,7 +40,7 @@ export default function Genealogy() {
     const stack = [currentMember.id];
     while (stack.length) {
       const id = stack.pop();
-      allApproved.filter(m => m.referrer_id === id).forEach(m => {
+      allApproved.filter(m => (m.placement_id || m.referrer_id) === id).forEach(m => {
         if (!ids.has(m.id)) { ids.add(m.id); stack.push(m.id); }
       });
     }
@@ -57,12 +61,13 @@ export default function Genealogy() {
     : [];
 
   const TreeNode = useCallback(function TreeNode({ member, level = 0 }) {
-    const downlines = approvedMembers.filter(m => m.referrer_id === member.id);
+    const downlines = approvedMembers.filter(m => (m.placement_id || m.referrer_id) === member.id);
     const isRoot = level === 0;
     const status = maintenanceStatus(member, codes);
     const isActive = status.isGreen;
-    const slots = `${member.direct_downlines_count || 0}/10`;
+    const slots = `${downlines.length}/10`;
     const treeLevel = member.tree_level || level;
+    const canPlace = lobbyMembers.length > 0 && downlines.length < 10;
 
     return (
       <div className="flex flex-col items-center">
@@ -105,6 +110,14 @@ export default function Genealogy() {
             )}
             <span className="font-medium">L{treeLevel} · {slots}</span>
           </div>
+          {canPlace && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setPlacementTarget(member); }}
+              className="mt-2 w-full bg-white/20 hover:bg-white/30 rounded-lg py-1 text-[10px] font-bold flex items-center justify-center gap-1 transition-colors"
+            >
+              <UserPlus className="w-3 h-3" /> Place Here
+            </button>
+          )}
         </div>
 
         {/* Children with T-junction connectors */}
@@ -141,7 +154,29 @@ export default function Genealogy() {
         )}
       </div>
     );
-  }, [approvedMembers, codes, setSelected]);
+  }, [approvedMembers, codes, setSelected, lobbyMembers, setPlacementTarget]);
+
+  async function handlePlaceMember(lobbyMember) {
+    setPlacing(true);
+    try {
+      const treeLevel = (placementTarget.tree_level || 0) + 1;
+      await updateRecord("members", lobbyMember.id, {
+        placement_id: placementTarget.id,
+        status: "approved",
+        tree_level: treeLevel,
+        approved_date: new Date().toISOString(),
+      });
+      await updateRecord("members", placementTarget.id, {
+        direct_downlines_count: (placementTarget.direct_downlines_count || 0) + 1,
+      });
+      toast.success(`${lobbyMember.username} placed under ${placementTarget.username}`);
+      setPlacementTarget(null);
+      window.location.reload();
+    } catch (err) {
+      toast.error("Failed to place member");
+    }
+    setPlacing(false);
+  }
 
   if (isLoading) {
     return (
@@ -193,6 +228,29 @@ export default function Genealogy() {
           <span className="text-sm font-medium text-red-700">Inactive — No maintenance</span>
         </div>
       </div>
+
+      {/* Lobby — unplaced members who used the current user's referral link */}
+      {lobbyMembers.length > 0 && (
+        <div className="mb-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200 p-4">
+          <h3 className="font-bold text-amber-900 flex items-center gap-2 mb-3">
+            <UserPlus className="w-4 h-4" /> Lobby — {lobbyMembers.length} member{lobbyMembers.length !== 1 ? "s" : ""} waiting for placement
+          </h3>
+          <p className="text-xs text-amber-700 mb-3">These members registered using your referral link. Click "Place Here" on any node in your tree to position them.</p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {lobbyMembers.map(m => (
+              <div key={m.id} className="flex-shrink-0 bg-white rounded-xl border border-amber-200 px-3 py-2 flex items-center gap-2">
+                <div className="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-bold text-xs">
+                  {(m.username || "U").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900 text-sm">{m.username || m.full_name}</p>
+                  <p className="text-xs text-gray-400">{new Date(m.created_date || m.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Left: Members list panel */}
@@ -265,6 +323,41 @@ export default function Genealogy() {
           </div>
         </div>
       </div>
+
+      {/* Placement modal */}
+      {placementTarget && lobbyMembers.length > 0 && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setPlacementTarget(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Place under</h3>
+                <p className="text-sm text-amber-600 font-medium">@{placementTarget.username || placementTarget.full_name}</p>
+              </div>
+              <button onClick={() => setPlacementTarget(null)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">Select a lobby member to place as their downline:</p>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {lobbyMembers.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => handlePlaceMember(m)}
+                  disabled={placing}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50 transition-colors text-left disabled:opacity-50"
+                >
+                  <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-bold text-sm">
+                    {(m.username || "U").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900 text-sm">{m.username || m.full_name}</p>
+                    <p className="text-xs text-gray-400">Registered {new Date(m.created_date || m.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <UserPlus className="w-4 h-4 text-amber-500" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
