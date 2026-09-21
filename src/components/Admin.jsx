@@ -264,8 +264,15 @@ export default function Admin() {
   }
 
   async function deleteMember(id) {
-    try { await updateRecord("members", id, { status: "deleted", deleted_date: new Date().toISOString() }); toast.success("Account deleted"); window.location.reload(); }
-    catch { toast.error("Failed to delete"); }
+    try {
+      const { error } = await supabase
+        .from("members")
+        .update({ status: "deleted", deleted_date: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+      toast.success("Account deleted");
+      window.location.reload();
+    } catch { toast.error("Failed to delete"); }
   }
 
   async function restoreMember(id) {
