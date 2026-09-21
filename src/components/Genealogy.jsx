@@ -290,7 +290,7 @@ export default function Genealogy() {
               />
             </div>
           </div>
-          <div className="max-h-[260px] lg:max-h-[600px] overflow-y-auto">
+          <div className="max-h-[168px] overflow-y-auto">
             {(search ? searchResults : approvedMembers).map(m => {
               const status = maintenanceStatus(m, codes);
               const isActive = status.isGreen;
@@ -317,7 +317,7 @@ export default function Genealogy() {
         </div>
 
         {/* Right: Tree visualization */}
-        <div className="flex-1 min-h-[700px] bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="flex-1 min-h-[700px] flex flex-col bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
           {/* Zoom controls */}
           <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100">
             <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -334,7 +334,7 @@ export default function Genealogy() {
               </button>
             </div>
           </div>
-          <div className="p-4 overflow-auto">
+          <div className="flex-1 overflow-auto p-4">
             <div style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center', transition: 'transform 0.2s' }}>
               {selected ? <TreeNode member={selected} /> : (
                 <div className="flex flex-col items-center justify-center py-16 text-gray-400">
