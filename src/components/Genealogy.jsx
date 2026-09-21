@@ -74,46 +74,59 @@ export default function Genealogy() {
         {/* Node card */}
         <div
           onClick={() => setSelected(member)}
-          className={`cursor-pointer relative w-44 rounded-2xl px-3 py-3 transition-all hover:shadow-xl border-2 ${
+          className={`group cursor-pointer relative w-48 rounded-2xl px-3.5 py-3.5 transition-all duration-300 hover:scale-105 hover:shadow-2xl border-2 ${
             isActive
-              ? "bg-green-500 border-green-600 text-white"
-              : "bg-red-500 border-red-600 text-white"
-          } ${isRoot ? "ring-4 ring-amber-400 ring-offset-2" : ""}`}
+              ? "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 border-emerald-300/50 text-white shadow-lg shadow-emerald-500/30"
+              : "bg-gradient-to-br from-rose-500 via-red-500 to-rose-600 border-rose-300/50 text-white shadow-lg shadow-rose-500/30"
+          } ${isRoot ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-gray-50" : ""}`}
         >
-          {/* Top row: icon + username + number badge */}
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-              <User className="w-3.5 h-3.5 text-white" />
+          {/* Subtle inner glow overlay */}
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/10 to-white/10 pointer-events-none" />
+
+          {/* Top row: avatar + username + level badge */}
+          <div className="relative flex items-center gap-2 mb-2.5">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${isActive ? "from-white/30 to-white/10" : "from-white/20 to-white/5"} ring-2 ring-white/40`}>
+              <User className="w-4 h-4 text-white drop-shadow" />
             </div>
-            <span className="font-bold text-sm truncate flex-1 text-center px-1">{member.username || member.full_name}</span>
-            <div className="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center flex-shrink-0">
-              <span className="text-[10px] font-bold text-white">{treeLevel}</span>
+            <span className="font-bold text-sm truncate flex-1 text-center px-1 drop-shadow-sm">{member.username || member.full_name}</span>
+            <div className="w-6 h-6 rounded-lg bg-white/25 backdrop-blur-sm flex items-center justify-center flex-shrink-0 ring-1 ring-white/30">
+              <span className="text-[10px] font-bold text-white">L{treeLevel}</span>
             </div>
           </div>
+
           {/* Status row */}
-          <div className="flex items-center justify-between text-[11px]">
+          <div className="relative flex items-center justify-between text-[11px] mb-1.5">
             {isActive ? (
-              <span className="flex items-center gap-1 font-medium">
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <span className="flex items-center gap-1 font-medium bg-white/15 rounded-full px-1.5 py-0.5">
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse shadow-sm shadow-white/50" />
                 {formatTime(status.secondsLeft)}
               </span>
             ) : status.secondsLeft > 0 ? (
-              <span className="flex items-center gap-1 font-medium">
-                <span className="w-2 h-2 rounded-full bg-white/70" />
+              <span className="flex items-center gap-1 font-medium bg-white/10 rounded-full px-1.5 py-0.5">
+                <span className="w-2 h-2 rounded-full bg-white/60" />
                 {formatTime(status.secondsLeft)}
               </span>
             ) : (
-              <span className="flex items-center gap-1 font-medium">
-                <span className="w-2 h-2 rounded-full bg-white/70" />
+              <span className="flex items-center gap-1 font-medium bg-white/10 rounded-full px-1.5 py-0.5">
+                <span className="w-2 h-2 rounded-full bg-white/60" />
                 Expired
               </span>
             )}
-            <span className="font-medium">L{treeLevel} · {slots}</span>
+            <span className="font-bold bg-white/20 rounded-full px-1.5 py-0.5">{slots}</span>
           </div>
+
+          {/* Slot progress bar */}
+          <div className="relative h-1.5 rounded-full bg-white/15 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${isActive ? "bg-white/80" : "bg-white/50"}`}
+              style={{ width: `${(downlines.length / 10) * 100}%` }}
+            />
+          </div>
+
           {canPlace && (
             <button
               onClick={(e) => { e.stopPropagation(); setPlacementTarget(member); }}
-              className="mt-2 w-full bg-white/20 hover:bg-white/30 rounded-lg py-1 text-[10px] font-bold flex items-center justify-center gap-1 transition-colors"
+              className="relative mt-2 w-full bg-white/25 hover:bg-white/40 backdrop-blur-sm rounded-lg py-1.5 text-[10px] font-bold flex items-center justify-center gap-1 transition-all border border-white/30 hover:border-white/50"
             >
               <UserPlus className="w-3 h-3" /> Place Here
             </button>
@@ -124,8 +137,8 @@ export default function Genealogy() {
         {downlines.length > 0 && (
           <>
             {/* Vertical line from parent bottom to horizontal bar */}
-            <div className="w-0.5 h-6 bg-[#2196F3]" />
-            {/* Children row — horizontal bar sits at the top */}
+            <div className="w-1 h-6 rounded-full bg-gradient-to-b from-emerald-400 to-blue-500" />
+            {/* Children row */}
             <div className="flex flex-nowrap justify-center gap-4">
               {downlines.slice(0, 10).map((d, i, arr) => {
                 const isOnly = arr.length === 1;
@@ -133,10 +146,10 @@ export default function Genealogy() {
                 const isLast = i === arr.length - 1;
                 return (
                   <div key={d.id} className="relative flex flex-col items-center">
-                    {/* Horizontal bar segment — bridges the gap to adjacent children */}
+                    {/* Horizontal bar segment */}
                     {!isOnly && (
                       <div
-                        className="absolute top-0 h-0.5 bg-[#2196F3]"
+                        className="absolute top-0 h-1 rounded-full bg-gradient-to-r from-blue-500 to-emerald-400"
                         style={{
                           left: isFirst ? '50%' : '-8px',
                           right: isLast ? '50%' : '-8px',
@@ -144,7 +157,7 @@ export default function Genealogy() {
                       />
                     )}
                     {/* Vertical drop from horizontal bar to child card */}
-                    <div className="w-0.5 h-6 bg-[#2196F3]" />
+                    <div className="w-1 h-6 rounded-full bg-gradient-to-b from-blue-500 to-emerald-400" />
                     <TreeNode member={d} level={level + 1} />
                   </div>
                 );
@@ -225,13 +238,13 @@ export default function Genealogy() {
 
       {/* Status Legend */}
       <div className="flex items-center gap-4 mb-4 flex-wrap">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-200">
-          <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-sm font-medium text-green-700">Active — Maintenance redeemed</span>
+        <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 shadow-sm">
+          <span className="w-3 h-3 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 animate-pulse shadow-sm shadow-emerald-500/50" />
+          <span className="text-sm font-semibold text-emerald-700">Active — Maintenance redeemed</span>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-200">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-          <span className="text-sm font-medium text-red-700">Inactive — No maintenance</span>
+        <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-gradient-to-r from-rose-50 to-red-50 border border-rose-200 shadow-sm">
+          <span className="w-3 h-3 rounded-full bg-gradient-to-br from-rose-400 to-red-600 shadow-sm shadow-rose-500/50" />
+          <span className="text-sm font-semibold text-rose-700">Inactive — No maintenance</span>
         </div>
       </div>
 
@@ -302,7 +315,7 @@ export default function Genealogy() {
         </div>
 
         {/* Right: Tree visualization */}
-        <div className="flex-1 min-h-[700px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="flex-1 min-h-[700px] bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 overflow-hidden" style={{ backgroundImage: "radial-gradient(circle, #d1d5db 1px, transparent 1px)", backgroundSize: "24px 24px" }}>
           {/* Zoom controls */}
           <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100">
             <div className="flex items-center gap-2 text-sm text-gray-500">
