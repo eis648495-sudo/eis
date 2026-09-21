@@ -46,6 +46,7 @@ export default function Admin() {
   const [transferSubAdminId, setTransferSubAdminId] = useState("");
   const [transferCodeCount, setTransferCodeCount] = useState("1");
   const [transferring, setTransferring] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   const { data: members = [] } = useTable("members");
   const { data: codes = [], refetch: refetchCodes } = useTable("maintenance_codes");
@@ -174,6 +175,14 @@ export default function Admin() {
     catch { toast.error("Failed to delete code"); }
   }
 
+  async function confirmDeleteAction() {
+    if (!confirmDelete) return;
+    const { type, id } = confirmDelete;
+    setConfirmDelete(null);
+    if (type === "member") await deleteMember(id);
+    else if (type === "code") await deleteCode(id);
+  }
+
   async function copyCode(code) {
     try { await navigator.clipboard.writeText(code); toast.success("Code copied!"); }
     catch { toast.error("Failed to copy"); }
@@ -238,7 +247,6 @@ export default function Admin() {
   }
 
   async function deleteMember(id) {
-    if (!confirm("Delete this account? They can be restored later.")) return;
     try { await updateRecord("members", id, { status: "deleted", deleted_date: new Date().toISOString() }); toast.success("Account deleted"); window.location.reload(); }
     catch { toast.error("Failed to delete"); }
   }
@@ -589,7 +597,7 @@ export default function Admin() {
                     <button onClick={() => setShowPasswords(s => !s)} className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors" title="Toggle Passwords"><Lock className="w-4 h-4" /></button>
                     {isSupAdmin && <button onClick={() => setEditMember({ ...m })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>}
                     {m.status === "approved" && (
-                      <button onClick={() => deleteMember(m.id)} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Delete Account"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => setConfirmDelete({ type: "member", id: m.id, name: m.full_name || m.username })} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Delete Account"><Trash2 className="w-4 h-4" /></button>
                     )}
                   </div>
                 </div>
@@ -711,7 +719,7 @@ export default function Admin() {
                         <td className="px-6 py-4">
                           <div className="flex gap-1">
                             <button onClick={() => copyCode(c.code)} className="p-1.5 bg-gray-100 text-gray-600 rounded hover:bg-gray-200" title="Copy"><Copy className="w-3.5 h-3.5" /></button>
-                            {c.is_used && <button onClick={() => deleteCode(c.id)} className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>}
+                            {c.is_used && <button onClick={() => setConfirmDelete({ type: "code", id: c.id, name: c.code })} className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>}
                           </div>
                         </td>
                       </tr>
@@ -1445,6 +1453,47 @@ export default function Admin() {
                   </Button>
                 </div>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setConfirmDelete(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-7 h-7 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Confirm Delete</h3>
+              <p className="text-sm text-gray-500 mb-1">
+                {confirmDelete.type === "member"
+                  ? "Are you sure you want to delete this account?"
+                  : "Are you sure you want to delete this code?"}
+              </p>
+              <p className="text-sm font-semibold text-gray-700 mb-6 break-all">{confirmDelete.name}</p>
+              {confirmDelete.type === "member" && (
+                <p className="text-xs text-gray-400 mb-4">They can be restored later from the Deleted tab.</p>
+              )}
+              <div className="flex gap-3">
+                <Button onClick={() => setConfirmDelete(null)} variant="outline" className="flex-1">Cancel</Button>
+                <Button onClick={confirmDeleteAction} className="flex-1 bg-red-600 hover:bg-red-700 text-white">
+                  <Trash2 className="w-4 h-4 mr-1" /> Delete
+                </Button>
+              </div>
             </motion.div>
           </motion.div>
         )}
