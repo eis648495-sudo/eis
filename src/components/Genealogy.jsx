@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { GitBranch, Search, ArrowRight, Users, ZoomIn, ZoomOut, User, Clock, Activity } from "lucide-react";
-import { useTable, useCurrentMember } from "../lib/useData";
+import { GitBranch, Search, ArrowRight, Users, ZoomIn, ZoomOut, User, Clock, Activity, UserPlus, X, Heart } from "lucide-react";
+import { useTable, useCurrentMember, updateRecord } from "../lib/useData";
 import { Button } from "./ui";
 import { maintenanceStatus, formatTime } from "../lib/helpers";
+import toast from "react-hot-toast";
 
 export default function Genealogy() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [zoom, setZoom] = useState(100);
+  const [placementTarget, setPlacementTarget] = useState(null);
+  const [placing, setPlacing] = useState(false);
   const [, setTick] = useState(0);
   const { data: members = [], isLoading } = useTable("members");
   const { data: codes = [] } = useTable("maintenance_codes");
@@ -26,6 +29,7 @@ export default function Genealogy() {
   }, [currentMember]);
 
   const allApproved = members.filter(m => m.status === "approved");
+  const lobbyMembers = members.filter(m => m.status === "pending" && m.referrer_id === currentMember?.id);
   const isSuperAdmin = currentMember?.username === "supadmin" || currentMember?.username === "admin";
 
   // Non-super-admin viewers only see their own downline tree — supadmin, admin,
@@ -36,7 +40,7 @@ export default function Genealogy() {
     const stack = [currentMember.id];
     while (stack.length) {
       const id = stack.pop();
-      allApproved.filter(m => m.referrer_id === id).forEach(m => {
+      allApproved.filter(m => (m.placement_id || m.referrer_id) === id).forEach(m => {
         if (!ids.has(m.id)) { ids.add(m.id); stack.push(m.id); }
       });
     }
@@ -57,62 +61,86 @@ export default function Genealogy() {
     : [];
 
   const TreeNode = useCallback(function TreeNode({ member, level = 0 }) {
-    const downlines = approvedMembers.filter(m => m.referrer_id === member.id);
+    const downlines = approvedMembers.filter(m => (m.placement_id || m.referrer_id) === member.id);
     const isRoot = level === 0;
     const status = maintenanceStatus(member, codes);
     const isActive = status.isGreen;
-    const slots = `${member.direct_downlines_count || 0}/10`;
+    const slots = `${downlines.length}/10`;
     const treeLevel = member.tree_level || level;
+    const canPlace = lobbyMembers.length > 0 && downlines.length < 10;
 
     return (
       <div className="flex flex-col items-center">
         {/* Node card */}
         <div
           onClick={() => setSelected(member)}
-          className={`cursor-pointer relative w-44 rounded-2xl px-3 py-3 transition-all hover:shadow-xl border-2 ${
+          className={`group cursor-pointer relative w-48 rounded-2xl px-3.5 py-3.5 transition-all duration-300 hover:scale-105 hover:shadow-2xl border-2 ${
             isActive
-              ? "bg-green-500 border-green-600 text-white"
-              : "bg-red-500 border-red-600 text-white"
-          } ${isRoot ? "ring-4 ring-amber-400 ring-offset-2" : ""}`}
+              ? "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 border-emerald-300/50 text-white"
+              : "bg-gradient-to-br from-rose-500 via-red-500 to-rose-600 border-rose-300/50 text-white"
+          } ${isRoot ? "ring-4 ring-amber-400 ring-offset-2 ring-offset-gray-50" : ""}`}
         >
-          {/* Top row: icon + username + number badge */}
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-              <User className="w-3.5 h-3.5 text-white" />
+          {/* Subtle inner glow overlay */}
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/10 to-white/10 pointer-events-none" />
+
+          {/* Top row: avatar + username + level badge */}
+          <div className="relative flex items-center gap-2 mb-2.5">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${isActive ? "from-white/30 to-white/10" : "from-white/20 to-white/5"} ring-2 ring-white/40`}>
+              <User className="w-4 h-4 text-white drop-shadow" />
             </div>
-            <span className="font-bold text-sm truncate flex-1 text-center px-1">{member.username || member.full_name}</span>
-            <div className="w-5 h-5 rounded-full bg-white/25 flex items-center justify-center flex-shrink-0">
-              <span className="text-[10px] font-bold text-white">{treeLevel}</span>
+            <span className="font-bold text-sm truncate flex-1 text-center px-1 drop-shadow-sm">{member.username || member.full_name}</span>
+            <div className="w-6 h-6 rounded-lg bg-white/25 backdrop-blur-sm flex items-center justify-center flex-shrink-0 ring-1 ring-white/30">
+              <span className="text-[10px] font-bold text-white">L{treeLevel}</span>
             </div>
           </div>
+
           {/* Status row */}
-          <div className="flex items-center justify-between text-[11px]">
+          <div className="relative flex items-center justify-between text-[11px] mb-1.5">
             {isActive ? (
-              <span className="flex items-center gap-1 font-medium">
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <span className="flex items-center gap-1 font-medium bg-white/15 rounded-full px-1.5 py-0.5">
+                <motion.span animate={{ scale: [1, 1.4, 1, 1.2, 1] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }} className="flex items-center">
+                  <Heart className="w-3 h-3 text-white fill-white" />
+                </motion.span>
                 {formatTime(status.secondsLeft)}
               </span>
             ) : status.secondsLeft > 0 ? (
-              <span className="flex items-center gap-1 font-medium">
-                <span className="w-2 h-2 rounded-full bg-white/70" />
+              <span className="flex items-center gap-1 font-medium bg-white/10 rounded-full px-1.5 py-0.5">
+                <Heart className="w-3 h-3 text-white/60" />
                 {formatTime(status.secondsLeft)}
               </span>
             ) : (
-              <span className="flex items-center gap-1 font-medium">
-                <span className="w-2 h-2 rounded-full bg-white/70" />
+              <span className="flex items-center gap-1 font-medium bg-white/10 rounded-full px-1.5 py-0.5">
+                <Heart className="w-3 h-3 text-white/60" />
                 Expired
               </span>
             )}
-            <span className="font-medium">L{treeLevel} · {slots}</span>
+            <span className="font-bold bg-white/20 rounded-full px-1.5 py-0.5">{slots}</span>
           </div>
+
+          {/* Slot progress bar */}
+          <div className="relative h-1.5 rounded-full bg-white/15 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${isActive ? "bg-white/80" : "bg-white/50"}`}
+              style={{ width: `${(downlines.length / 10) * 100}%` }}
+            />
+          </div>
+
+          {canPlace && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setPlacementTarget(member); }}
+              className="relative mt-2 w-full bg-white/25 hover:bg-white/40 backdrop-blur-sm rounded-lg py-1.5 text-[10px] font-bold flex items-center justify-center gap-1 transition-all border border-white/30 hover:border-white/50"
+            >
+              <UserPlus className="w-3 h-3" /> Place Here
+            </button>
+          )}
         </div>
 
         {/* Children with T-junction connectors */}
         {downlines.length > 0 && (
           <>
             {/* Vertical line from parent bottom to horizontal bar */}
-            <div className="w-0.5 h-6 bg-[#2196F3]" />
-            {/* Children row — horizontal bar sits at the top */}
+            <div className="w-1 h-6 rounded-full bg-gradient-to-b from-emerald-400 to-blue-500" />
+            {/* Children row */}
             <div className="flex flex-nowrap justify-center gap-4">
               {downlines.slice(0, 10).map((d, i, arr) => {
                 const isOnly = arr.length === 1;
@@ -120,10 +148,10 @@ export default function Genealogy() {
                 const isLast = i === arr.length - 1;
                 return (
                   <div key={d.id} className="relative flex flex-col items-center">
-                    {/* Horizontal bar segment — bridges the gap to adjacent children */}
+                    {/* Horizontal bar segment */}
                     {!isOnly && (
                       <div
-                        className="absolute top-0 h-0.5 bg-[#2196F3]"
+                        className="absolute top-0 h-1 rounded-full bg-gradient-to-r from-blue-500 to-emerald-400"
                         style={{
                           left: isFirst ? '50%' : '-8px',
                           right: isLast ? '50%' : '-8px',
@@ -131,7 +159,7 @@ export default function Genealogy() {
                       />
                     )}
                     {/* Vertical drop from horizontal bar to child card */}
-                    <div className="w-0.5 h-6 bg-[#2196F3]" />
+                    <div className="w-1 h-6 rounded-full bg-gradient-to-b from-blue-500 to-emerald-400" />
                     <TreeNode member={d} level={level + 1} />
                   </div>
                 );
@@ -141,7 +169,35 @@ export default function Genealogy() {
         )}
       </div>
     );
-  }, [approvedMembers, codes, setSelected]);
+  }, [approvedMembers, codes, setSelected, lobbyMembers, setPlacementTarget]);
+
+  async function handlePlaceMember(lobbyMember) {
+    setPlacing(true);
+    try {
+      const treeLevel = (placementTarget.tree_level || 0) + 1;
+      const { error: placeError } = await updateRecord("members", lobbyMember.id, {
+        referrer_id: placementTarget.id,
+        status: "approved",
+        tree_level: treeLevel,
+        approved_date: new Date().toISOString(),
+      });
+      if (placeError) {
+        toast.error(placeError.message || "Failed to place member");
+        setPlacing(false);
+        return;
+      }
+      const { error: countError } = await updateRecord("members", placementTarget.id, {
+        direct_downlines_count: (placementTarget.direct_downlines_count || 0) + 1,
+      });
+      if (countError) console.error("Failed to update downline count:", countError.message);
+      toast.success(`${lobbyMember.username} placed under ${placementTarget.username}`);
+      setPlacementTarget(null);
+      window.location.reload();
+    } catch (err) {
+      toast.error(err.message || "Failed to place member");
+    }
+    setPlacing(false);
+  }
 
   if (isLoading) {
     return (
@@ -184,15 +240,38 @@ export default function Genealogy() {
 
       {/* Status Legend */}
       <div className="flex items-center gap-4 mb-4 flex-wrap">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-50 border border-green-200">
-          <span className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-sm font-medium text-green-700">Active — Maintenance redeemed</span>
+        <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 shadow-sm">
+          <span className="w-3 h-3 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 animate-pulse shadow-sm shadow-emerald-500/50" />
+          <span className="text-sm font-semibold text-emerald-700">Active — Maintenance redeemed</span>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-50 border border-red-200">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-          <span className="text-sm font-medium text-red-700">Inactive — No maintenance</span>
+        <div className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-gradient-to-r from-rose-50 to-red-50 border border-rose-200 shadow-sm">
+          <span className="w-3 h-3 rounded-full bg-gradient-to-br from-rose-400 to-red-600 shadow-sm shadow-rose-500/50" />
+          <span className="text-sm font-semibold text-rose-700">Inactive — No maintenance</span>
         </div>
       </div>
+
+      {/* Lobby — unplaced members who used the current user's referral link */}
+      {lobbyMembers.length > 0 && (
+        <div className="mb-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl border border-amber-200 p-4">
+          <h3 className="font-bold text-amber-900 flex items-center gap-2 mb-3">
+            <UserPlus className="w-4 h-4" /> Lobby — {lobbyMembers.length} member{lobbyMembers.length !== 1 ? "s" : ""} waiting for placement
+          </h3>
+          <p className="text-xs text-amber-700 mb-3">These members registered using your referral link. Click "Place Here" on any node in your tree to position them.</p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {lobbyMembers.map(m => (
+              <div key={m.id} className="flex-shrink-0 bg-white rounded-xl border border-amber-200 px-3 py-2 flex items-center gap-2">
+                <div className="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-bold text-xs">
+                  {(m.username || "U").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900 text-sm">{m.username || m.full_name}</p>
+                  <p className="text-xs text-gray-400">{new Date(m.created_date || m.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Left: Members list panel */}
@@ -238,7 +317,7 @@ export default function Genealogy() {
         </div>
 
         {/* Right: Tree visualization */}
-        <div className="flex-1 min-h-[700px] bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="flex-1 min-h-[700px] bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
           {/* Zoom controls */}
           <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100">
             <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -255,16 +334,53 @@ export default function Genealogy() {
               </button>
             </div>
           </div>
-          <div className="p-4 overflow-auto" style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center', transition: 'transform 0.2s' }}>
-            {selected ? <TreeNode member={selected} /> : (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                <Users className="w-12 h-12 mb-3 text-gray-300" />
-                <p className="text-sm">No genealogy data available</p>
-              </div>
-            )}
+          <div className="p-4 overflow-auto">
+            <div style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center', transition: 'transform 0.2s' }}>
+              {selected ? <TreeNode member={selected} /> : (
+                <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                  <Users className="w-12 h-12 mb-3 text-gray-300" />
+                  <p className="text-sm">No genealogy data available</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Placement modal */}
+      {placementTarget && lobbyMembers.length > 0 && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setPlacementTarget(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Place under</h3>
+                <p className="text-sm text-amber-600 font-medium">@{placementTarget.username || placementTarget.full_name}</p>
+              </div>
+              <button onClick={() => setPlacementTarget(null)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">Select a lobby member to place as their downline:</p>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {lobbyMembers.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => handlePlaceMember(m)}
+                  disabled={placing}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border border-gray-200 hover:border-amber-400 hover:bg-amber-50 transition-colors text-left disabled:opacity-50"
+                >
+                  <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-bold text-sm">
+                    {(m.username || "U").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900 text-sm">{m.username || m.full_name}</p>
+                    <p className="text-xs text-gray-400">Registered {new Date(m.created_date || m.created_at).toLocaleDateString()}</p>
+                  </div>
+                  <UserPlus className="w-4 h-4 text-amber-500" />
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
