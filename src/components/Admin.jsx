@@ -150,6 +150,23 @@ export default function Admin() {
     return { l1, l2, l3, total };
   }
 
+  // Compute actual withdrawable balance from transactions (same logic as Dashboard)
+  function getMemberBalance(memberId) {
+    const txns = transactions.filter(t => t.member_id === memberId);
+    const lastWithdrawal = txns
+      .filter(t => t.type === "withdrawal" && t.status === "completed")
+      .sort((a, b) => new Date(b.created_date || b.created_at) - new Date(a.created_date || a.created_at))[0];
+    const lastWDate = lastWithdrawal ? new Date(lastWithdrawal.created_date || lastWithdrawal.created_at) : null;
+    return txns
+      .filter(t => ["level_bonus", "referral_bonus", "adjustment"].includes(t.type) && (!lastWDate || new Date(t.created_date || t.created_at) > lastWDate))
+      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  }
+
+  // Compute actual direct downline count from member relationships (same logic as Genealogy)
+  function getDirectDownlineCount(memberId) {
+    return approvedMembers.filter(m => (m.placement_id || m.referrer_id) === memberId).length;
+  }
+
   async function generateCodes() {
     const count = parseInt(newCode.count) || 1;
     try {
@@ -451,7 +468,7 @@ export default function Admin() {
     const headers = ["Full Name", "Username", "Password", "Email", "Phone", "Role", "Status", "Referral Code", "Referrer", "Direct Downlines", "Tree Level", "Balance", "Total Earnings", "Approved Date"];
     const rows = activeMembers.map(m => {
       const referrer = members.find(r => r.id === m.referrer_id);
-      return [m.full_name, m.username, m.password, m.email || "", m.phone || "", m.role, m.status, m.referral_code || "", referrer?.username || "", m.direct_downlines_count || 0, m.tree_level || 0, m.available_balance || 0, m.total_earnings || 0, m.approved_date ? formatDate(m.approved_date, "MMM d, yyyy") : ""];
+      return [m.full_name, m.username, m.password, m.email || "", m.phone || "", m.role, m.status, m.referral_code || "", referrer?.username || "", getDirectDownlineCount(m.id), m.tree_level || 0, getMemberBalance(m.id), getMemberEarnings(m.id).total, m.approved_date ? formatDate(m.approved_date, "MMM d, yyyy") : ""];
     });
     const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -581,11 +598,11 @@ export default function Admin() {
                   <div className="hidden sm:flex items-center gap-4 flex-shrink-0">
                     <div className="text-right">
                       <p className="text-xs text-gray-400">Balance</p>
-                      <p className="text-sm font-bold text-gray-900">{money(m.available_balance || 0)}</p>
+                      <p className="text-sm font-bold text-gray-900">{money(getMemberBalance(m.id))}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-gray-400">Downlines</p>
-                      <p className="text-sm font-bold text-gray-900">{m.direct_downlines_count || 0}/10</p>
+                      <p className="text-sm font-bold text-gray-900">{getDirectDownlineCount(m.id)}/10</p>
                     </div>
                   </div>
                   {/* Action pills */}
