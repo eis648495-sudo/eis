@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { GitBranch, Search, ArrowRight, Users, ZoomIn, ZoomOut, User, Clock, Activity, UserPlus, X } from "lucide-react";
+import { GitBranch, Search, ArrowRight, Users, ZoomIn, ZoomOut, User, Clock, Activity, UserPlus, X, Heart } from "lucide-react";
 import { useTable, useCurrentMember, updateRecord } from "../lib/useData";
 import { Button } from "./ui";
 import { maintenanceStatus, formatTime } from "../lib/helpers";
@@ -98,17 +98,19 @@ export default function Genealogy() {
           <div className="relative flex items-center justify-between text-[11px] mb-1.5">
             {isActive ? (
               <span className="flex items-center gap-1 font-medium bg-white/15 rounded-full px-1.5 py-0.5">
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse shadow-sm shadow-white/50" />
+                <motion.span animate={{ scale: [1, 1.4, 1, 1.2, 1] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }} className="flex items-center">
+                  <Heart className="w-3 h-3 text-white fill-white" />
+                </motion.span>
                 {formatTime(status.secondsLeft)}
               </span>
             ) : status.secondsLeft > 0 ? (
               <span className="flex items-center gap-1 font-medium bg-white/10 rounded-full px-1.5 py-0.5">
-                <span className="w-2 h-2 rounded-full bg-white/60" />
+                <Heart className="w-3 h-3 text-white/60" />
                 {formatTime(status.secondsLeft)}
               </span>
             ) : (
               <span className="flex items-center gap-1 font-medium bg-white/10 rounded-full px-1.5 py-0.5">
-                <span className="w-2 h-2 rounded-full bg-white/60" />
+                <Heart className="w-3 h-3 text-white/60" />
                 Expired
               </span>
             )}
