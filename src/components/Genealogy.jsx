@@ -160,20 +160,26 @@ export default function Genealogy() {
     setPlacing(true);
     try {
       const treeLevel = (placementTarget.tree_level || 0) + 1;
-      await updateRecord("members", lobbyMember.id, {
-        placement_id: placementTarget.id,
+      const { error: placeError } = await updateRecord("members", lobbyMember.id, {
+        referrer_id: placementTarget.id,
         status: "approved",
         tree_level: treeLevel,
         approved_date: new Date().toISOString(),
       });
-      await updateRecord("members", placementTarget.id, {
+      if (placeError) {
+        toast.error(placeError.message || "Failed to place member");
+        setPlacing(false);
+        return;
+      }
+      const { error: countError } = await updateRecord("members", placementTarget.id, {
         direct_downlines_count: (placementTarget.direct_downlines_count || 0) + 1,
       });
+      if (countError) console.error("Failed to update downline count:", countError.message);
       toast.success(`${lobbyMember.username} placed under ${placementTarget.username}`);
       setPlacementTarget(null);
       window.location.reload();
     } catch (err) {
-      toast.error("Failed to place member");
+      toast.error(err.message || "Failed to place member");
     }
     setPlacing(false);
   }
