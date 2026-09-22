@@ -447,10 +447,17 @@ export default function Admin() {
     try {
       const receipt = receipts.find(r => r.id === id);
       if (receipt?.receipt_url?.includes("cloudinary.com")) {
-        await deleteFromCloudinary(receipt.receipt_url);
+        const result = await deleteFromCloudinary(receipt.receipt_url);
+        if (!result.success && !result.skipped) {
+          console.error("Cloudinary delete failed:", result.error);
+          toast.error(`Receipt rejected, but Cloudinary delete failed: ${result.error}`);
+        } else {
+          toast.success("Receipt rejected & file deleted from Cloudinary");
+        }
+      } else {
+        toast.success("Receipt rejected");
       }
       await updateRecord("gcash_receipts", id, { status: "rejected" });
-      toast.success("Receipt rejected & file deleted from Cloudinary");
       window.location.reload();
     }
     catch { toast.error("Failed to reject receipt"); }
@@ -460,10 +467,17 @@ export default function Admin() {
     try {
       const receipt = receipts.find(r => r.id === id);
       if (receipt?.receipt_url?.includes("cloudinary.com")) {
-        await deleteFromCloudinary(receipt.receipt_url);
+        const result = await deleteFromCloudinary(receipt.receipt_url);
+        if (!result.success && !result.skipped) {
+          console.error("Cloudinary delete failed:", result.error);
+          toast.error(`Receipt deleted from database, but Cloudinary delete failed: ${result.error}`);
+        } else {
+          toast.success("Receipt deleted from Cloudinary & database");
+        }
+      } else {
+        toast.success("Receipt deleted");
       }
       await deleteRecord("gcash_receipts", id);
-      toast.success("Receipt deleted from Cloudinary & database");
       window.location.reload();
     }
     catch { toast.error("Failed to delete receipt"); }

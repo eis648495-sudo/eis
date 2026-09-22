@@ -54,9 +54,11 @@ export default async function handler(req, res) {
   }
 
   const { cloudName, resourceType, publicId } = parsed;
+  console.log("Cloudinary delete request:", { cloudName, resourceType, publicId, url });
   const creds = getCredentials(cloudName);
   if (!creds?.apiKey || !creds?.apiSecret) {
-    return res.status(500).json({ error: "Cloudinary API credentials not configured for this account" });
+    console.error("No credentials for cloud:", cloudName, "VITE_CLOUDINARY_CLOUD_NAME:", process.env.VITE_CLOUDINARY_CLOUD_NAME);
+    return res.status(500).json({ error: `Cloudinary API credentials not configured for cloud "${cloudName}"` });
   }
 
   const timestamp = Math.floor(Date.now() / 1000);
@@ -78,10 +80,11 @@ export default async function handler(req, res) {
       }
     );
     const data = await deleteRes.json();
+    console.log("Cloudinary API response:", { status: deleteRes.status, data });
     if (data.result === "ok" || data.result === "not found") {
       return res.status(200).json({ success: true, result: data.result });
     }
-    return res.status(500).json({ error: data.error?.message || "Delete failed" });
+    return res.status(500).json({ error: data.error?.message || `Delete failed (HTTP ${deleteRes.status})` });
   } catch (err) {
     return res.status(500).json({ error: err.message || "Delete failed" });
   }

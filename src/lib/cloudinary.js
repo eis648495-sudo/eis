@@ -77,7 +77,7 @@ export async function uploadToCloudinary(file) {
  * Returns true if deleted or not found, false on failure.
  */
 export async function deleteFromCloudinary(url) {
-  if (!url || !url.includes("cloudinary.com")) return false;
+  if (!url || !url.includes("cloudinary.com")) return { success: false, skipped: true };
   try {
     const res = await fetch("/api/delete-cloudinary", {
       method: "POST",
@@ -85,9 +85,10 @@ export async function deleteFromCloudinary(url) {
       body: JSON.stringify({ url }),
     });
     const data = await res.json();
-    return data.success === true;
-  } catch {
-    return false;
+    if (data.success) return { success: true };
+    return { success: false, error: data.error || `HTTP ${res.status}` };
+  } catch (err) {
+    return { success: false, error: err.message };
   }
 }
 
