@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 import { useTable, updateRecord, createRecord, deleteRecord } from "../lib/useData";
 import { supabase } from "../lib/supabase";
 import { getSessionMemberId } from "../lib/auth";
-import { isVideoUrl } from "../lib/cloudinary";
+import { isVideoUrl, deleteFromCloudinary } from "../lib/cloudinary";
 import { money, formatDate, generateReferralCode, maintenanceStatus, formatTime, LEVEL_CONFIG } from "../lib/helpers";
 import { Button, Input, Label, Badge } from "./ui";
 import Genealogy from "./Genealogy";
@@ -199,6 +199,7 @@ export default function Admin() {
     setConfirmDelete(null);
     if (type === "member") await deleteMember(id);
     else if (type === "code") await deleteCode(id);
+    else if (type === "receipt") await deleteReceipt(id);
   }
 
   async function copyCode(code) {
@@ -443,8 +444,29 @@ export default function Admin() {
   }
 
   async function rejectReceipt(id) {
-    try { await updateRecord("gcash_receipts", id, { status: "rejected" }); toast.success("Receipt rejected"); window.location.reload(); }
+    try {
+      const receipt = receipts.find(r => r.id === id);
+      if (receipt?.receipt_url?.includes("cloudinary.com")) {
+        await deleteFromCloudinary(receipt.receipt_url);
+      }
+      await updateRecord("gcash_receipts", id, { status: "rejected" });
+      toast.success("Receipt rejected & file deleted from Cloudinary");
+      window.location.reload();
+    }
     catch { toast.error("Failed to reject receipt"); }
+  }
+
+  async function deleteReceipt(id) {
+    try {
+      const receipt = receipts.find(r => r.id === id);
+      if (receipt?.receipt_url?.includes("cloudinary.com")) {
+        await deleteFromCloudinary(receipt.receipt_url);
+      }
+      await deleteRecord("gcash_receipts", id);
+      toast.success("Receipt deleted from Cloudinary & database");
+      window.location.reload();
+    }
+    catch { toast.error("Failed to delete receipt"); }
   }
 
   async function saveMinAmount() {
@@ -959,6 +981,7 @@ export default function Admin() {
                               <Button onClick={() => rejectReceipt(r.id)} size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 h-8 px-3 text-xs"><X className="w-3 h-3 mr-1" /> Reject</Button>
                             </div>
                           )}
+                          <Button onClick={() => setConfirmDelete({ type: "receipt", id: r.id, name: r.member_name || "this receipt" })} size="sm" variant="outline" className="border-gray-200 text-gray-500 hover:bg-gray-100 h-8 px-3 text-xs"><Trash2 className="w-3 h-3 mr-1" /> Delete</Button>
                         </div>
                       </div>
                     </div>

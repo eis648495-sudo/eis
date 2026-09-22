@@ -71,6 +71,26 @@ export async function uploadToCloudinary(file) {
   throw new Error(lastError || "All Cloudinary accounts failed");
 }
 
+/**
+ * Delete an asset from Cloudinary by calling the serverless API.
+ * Only works for Cloudinary URLs (http/https). No-op for other URLs.
+ * Returns true if deleted or not found, false on failure.
+ */
+export async function deleteFromCloudinary(url) {
+  if (!url || !url.includes("cloudinary.com")) return false;
+  try {
+    const res = await fetch("/api/delete-cloudinary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+    const data = await res.json();
+    return data.success === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Check whether a URL points to a Cloudinary (or other) video asset. */
 export function isVideoUrl(url) {
   if (!url) return false;
