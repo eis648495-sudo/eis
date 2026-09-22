@@ -17,6 +17,16 @@
       "name": "VERCEL_TOKEN",
       "description": "Vercel personal access token (from vercel.com → Account Settings → Tokens). Team-scoped token for team 'eis6', used to deploy/manage the mamlakahcommunity Vercel project via API.",
       "requiredAtBoot": false
+    },
+    {
+      "name": "VITE_CLOUDINARY_CLOUD_NAME",
+      "description": "Your Cloudinary cloud name from the Cloudinary dashboard (Console > Settings > Account). Used for uploading receipt images and videos via unsigned uploads.",
+      "requiredAtBoot": false
+    },
+    {
+      "name": "VITE_CLOUDINARY_UPLOAD_PRESET",
+      "description": "An unsigned upload preset name from Cloudinary (Console > Settings > Upload > Upload presets). Create one with signing mode 'Unsigned' to allow client-side uploads.",
+      "requiredAtBoot": false
     }
   ]
 }

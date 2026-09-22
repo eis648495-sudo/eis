@@ -11,6 +11,7 @@ import toast from "react-hot-toast";
 import { useTable, updateRecord, createRecord, deleteRecord } from "../lib/useData";
 import { supabase } from "../lib/supabase";
 import { getSessionMemberId } from "../lib/auth";
+import { isVideoUrl } from "../lib/cloudinary";
 import { money, formatDate, generateReferralCode, maintenanceStatus, formatTime, LEVEL_CONFIG } from "../lib/helpers";
 import { Button, Input, Label, Badge } from "./ui";
 import Genealogy from "./Genealogy";
@@ -932,7 +933,11 @@ export default function Admin() {
                         title="Click to view receipt"
                       >
                         {signedUrls[r.id] ? (
-                          <img src={signedUrls[r.id]} alt="Receipt" className="w-full h-full object-cover" />
+                          isVideoUrl(signedUrls[r.id]) ? (
+                            <video src={signedUrls[r.id]} alt="Receipt" className="w-full h-full object-cover" muted />
+                          ) : (
+                            <img src={signedUrls[r.id]} alt="Receipt" className="w-full h-full object-cover" />
+                          )
                         ) : (
                           <ImageIcon className="w-8 h-8 text-gray-300" />
                         )}
@@ -1446,12 +1451,21 @@ export default function Admin() {
               </div>
               <div className="p-4 flex items-center justify-center bg-gray-50 min-h-[300px] max-h-[70vh] overflow-auto">
                 {signedUrls[previewReceipt.id] ? (
-                  <img
-                    src={signedUrls[previewReceipt.id]}
-                    alt="Receipt"
-                    className="max-w-full max-h-[60vh] rounded-xl object-contain"
-                    onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
-                  />
+                  isVideoUrl(signedUrls[previewReceipt.id]) ? (
+                    <video
+                      src={signedUrls[previewReceipt.id]}
+                      controls
+                      autoPlay
+                      className="max-w-full max-h-[60vh] rounded-xl object-contain"
+                    />
+                  ) : (
+                    <img
+                      src={signedUrls[previewReceipt.id]}
+                      alt="Receipt"
+                      className="max-w-full max-h-[60vh] rounded-xl object-contain"
+                      onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                    />
+                  )
                 ) : null}
                 <div className="flex flex-col items-center text-gray-400" style={{ display: signedUrls[previewReceipt.id] ? 'none' : 'flex' }}>
                   <ImageIcon className="w-12 h-12 mb-2" />

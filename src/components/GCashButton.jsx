@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { useTable } from "../lib/useData";
 import { getSessionMemberId } from "../lib/auth";
 import { supabase } from "../lib/supabase";
+import { uploadToCloudinary, isCloudinaryConfigured } from "../lib/cloudinary";
 
 export function GCashButton() {
   const [open, setOpen] = useState(false);
@@ -27,53 +28,26 @@ export function GCashButton() {
   async function uploadReceipt(e) {
     const file = e.target.files[0];
     if (!file) return;
+    if (!isCloudinaryConfigured()) {
+      toast.error("Cloudinary is not configured. Contact admin to set up image storage.");
+      e.target.value = "";
+      return;
+    }
     setUploading(true);
     try {
-      // Convert image to compressed base64 data URL (no storage bucket needed)
-      const dataUrl = await compressImage(file, 1200, 0.8);
+      const receiptUrl = await uploadToCloudinary(file);
       await supabase.from("gcash_receipts").insert({
         member_id: memberId,
         member_name: "",
-        receipt_url: dataUrl,
+        receipt_url: receiptUrl,
         status: "pending",
       });
       toast.success("Receipt uploaded successfully!");
-    } catch {
-      toast.error("Failed to upload receipt");
+    } catch (err) {
+      toast.error(err.message || "Failed to upload receipt");
     }
     setUploading(false);
     e.target.value = "";
-  }
-
-  function compressImage(file, maxDim, quality) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          let { width, height } = img;
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            } else {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
-            }
-          }
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d");
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL("image/jpeg", quality));
-        };
-        img.onerror = reject;
-        img.src = e.target.result;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
   }
 
   return (
@@ -109,7 +83,7 @@ export function GCashButton() {
               <p className="text-sm text-gray-600 mt-1">{active.gcash_name}</p>
             </div>
             <label className="block">
-              <input type="file" accept="image/*" onChange={uploadReceipt} className="hidden" />
+              <input type="file" accept="image/*,video/*" onChange={uploadReceipt} className="hidden" />
               <div className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 cursor-pointer transition-all">
                 <Upload className="w-4 h-4" /> {uploading ? "Uploading..." : "Upload Receipt"}
               </div>
