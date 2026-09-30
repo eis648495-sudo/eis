@@ -102,7 +102,7 @@ export default function Dashboard() {
       const { data: freshCodes } = await supabase.from("maintenance_codes").select("*");
       // Distribute upline bonuses (only to uplines with green/active maintenance status)
       await distributeUplineBonuses(currentMember, freshMembers || members, freshCodes || allCodes, codeRecord);
-      toast.success("Code redeemed successfully! Level 1 bonus distributed.");
+      toast.success("Code redeemed successfully! Upline bonuses distributed.");
       setCode("");
       window.location.reload();
     } catch (err) {
@@ -119,23 +119,27 @@ export default function Dashboard() {
       return status.isGreen;
     };
 
-    // Level 1: bonus goes to direct referrer (who shared the link)
-    const referrer = allMembers.find(m => m.id === member.referrer_id);
-    if (canEarn(referrer)) {
-      const bonus1 = LEVEL_CONFIG.find(l => l.level === 1)?.bonus_amount || 0;
-      if (bonus1 > 0) {
-        await supabase.from("transactions").insert({
-          member_id: referrer.id,
-          type: "referral_bonus",
-          amount: bonus1,
-          bonus_level: 1,
-          description: `Level 1 bonus from ${member.username}`,
-          status: "completed",
-          from_member_id: member.id,
-        });
+    // Walk up the referrer chain, paying bonuses at each level (1 through MAX_BONUS_LEVEL)
+    let current = member;
+    for (let level = 1; level <= MAX_BONUS_LEVEL; level++) {
+      const upline = allMembers.find(m => m.id === current.referrer_id);
+      if (!upline) break;
+      if (canEarn(upline)) {
+        const bonus = LEVEL_CONFIG.find(l => l.level === level)?.bonus_amount || 0;
+        if (bonus > 0) {
+          await supabase.from("transactions").insert({
+            member_id: upline.id,
+            type: "referral_bonus",
+            amount: bonus,
+            bonus_level: level,
+            description: `Level ${level} bonus from ${member.username}`,
+            status: "completed",
+            from_member_id: member.id,
+          });
+        }
       }
+      current = upline;
     }
-    // Levels 2-5: display-only in ComPlan — no payout (MAX_BONUS_LEVEL = 1)
   }
 
   const referralLink = currentMember?.referral_code ? `${window.location.origin}/Register?ref=${currentMember.referral_code}` : "";

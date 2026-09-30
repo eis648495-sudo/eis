@@ -81,8 +81,8 @@ export const LEVEL_CONFIG = [
   { level: 5, label: "Level 5 — Fifth Generation", bonus_amount: 10, max_members: 100000, description: "Earn ₱10 every time a Level 5 downline redeems a maintenance code.", color: "from-rose-500 to-red-600", bgColor: "bg-rose-50", borderColor: "border-rose-200", textColor: "text-rose-700" },
 ];
 
-// Only Level 1 pays out income; levels 2–5 are display-only in the ComPlan
-export const MAX_BONUS_LEVEL = 1;
+// All 5 levels pay out income when downlines redeem maintenance codes
+export const MAX_BONUS_LEVEL = 5;
 
 export const TRANSACTION_TYPES = {
   level_bonus: { label: "Level Bonus", color: "bg-emerald-100 text-emerald-700" },

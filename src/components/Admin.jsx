@@ -320,16 +320,21 @@ export default function Admin() {
         if (!m || m.status !== "approved") return false;
         return maintenanceStatus(m, freshCodes || codes).isGreen;
       };
-      const referrer = (freshMembers || members).find(m => m.id === member.referrer_id);
-      if (canEarn(referrer)) {
-        const bonus1 = LEVEL_CONFIG.find(l => l.level === 1)?.bonus_amount || 0;
-        if (bonus1 > 0) await supabase.from("transactions").insert({
-          member_id: referrer.id, type: "referral_bonus", amount: bonus1, bonus_level: 1,
-          description: `Level 1 bonus from ${member.username}`, status: "completed", from_member_id: member.id,
-        });
+      const allMembers = freshMembers || members;
+      let current = member;
+      for (let level = 1; level <= MAX_BONUS_LEVEL; level++) {
+        const upline = allMembers.find(m => m.id === current.referrer_id);
+        if (!upline) break;
+        if (canEarn(upline)) {
+          const bonus = LEVEL_CONFIG.find(l => l.level === level)?.bonus_amount || 0;
+          if (bonus > 0) await supabase.from("transactions").insert({
+            member_id: upline.id, type: "referral_bonus", amount: bonus, bonus_level: level,
+            description: `Level ${level} bonus from ${member.username}`, status: "completed", from_member_id: member.id,
+          });
+        }
+        current = upline;
       }
-      // Levels 2-5: display-only in ComPlan — no payout (MAX_BONUS_LEVEL = 1)
-      toast.success("Code redeemed successfully! Level 1 bonus distributed.");
+      toast.success("Code redeemed successfully! Upline bonuses distributed.");
       setRedeemModal(null); setRedeemCode("");
       window.location.reload();
     } catch (err) { toast.error(err.message || "Failed to redeem code"); }
