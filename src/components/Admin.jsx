@@ -265,15 +265,23 @@ export default function Admin() {
 
   async function deleteMember(id) {
     try {
-      await updateRecord("members", id, { status: "deleted", deleted_date: new Date().toISOString() });
+      let { error } = await updateRecord("members", id, { status: "deleted", deleted_date: new Date().toISOString() });
+      // Fallback: external DB may not have the deleted_date column
+      if (error) ({ error } = await supabase.from("members").update({ status: "deleted" }).eq("id", id));
+      if (error) throw error;
       toast.success("Account deleted");
       window.location.reload();
     } catch (err) { toast.error(err?.message || "Failed to delete"); }
   }
 
   async function restoreMember(id) {
-    try { await updateRecord("members", id, { status: "approved", deleted_date: null }); toast.success("Account restored"); window.location.reload(); }
-    catch { toast.error("Failed to restore"); }
+    try {
+      let { error } = await updateRecord("members", id, { status: "approved", deleted_date: null });
+      if (error) ({ error } = await supabase.from("members").update({ status: "approved" }).eq("id", id));
+      if (error) throw error;
+      toast.success("Account restored");
+      window.location.reload();
+    } catch (err) { toast.error(err?.message || "Failed to restore"); }
   }
 
   async function saveEditMember() {
