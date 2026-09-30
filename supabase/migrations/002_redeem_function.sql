@@ -20,7 +20,7 @@ begin
   set maintenance_timer_seconds=null,maintenance_timer_set_at=null,updated_at=now()
   where id=p_member_id;
 
-  for lvl in 1..5 loop
+  for lvl in 1..1 loop
     if lvl=1 then
       select * into u from public.members where id=m.referrer_id and status='approved';
     else

@@ -135,7 +135,7 @@ export default function Admin() {
     ...(tabVisibility.monitoring ? [{ id: "monitoring", label: "Monitoring", icon: Eye }] : []),
     { id: "gcash", label: "GCash", icon: Smartphone },
     ...(deletedMembers.length > 0 ? [{ id: "deleted", label: `Deleted (${deletedMembers.length})`, icon: Trash2 }] : []),
-    { id: "roles", label: "Roles", icon: UserCog },
+    ...(canManageTabs ? [{ id: "roles", label: "Roles", icon: UserCog }] : []),
     ...(tabVisibility.subadmin ? [{ id: "subadmins", label: "Sub-Admins", icon: Shield }] : []),
     { id: "settings", label: "Settings", icon: Settings },
     { id: "profile", label: "My Profile", icon: User },
