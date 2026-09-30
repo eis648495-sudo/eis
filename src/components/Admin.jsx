@@ -316,11 +316,20 @@ export default function Admin() {
       });
       const { data: freshMembers } = await supabase.from("members").select("*");
       const { data: freshCodes } = await supabase.from("maintenance_codes").select("*");
+      const allMembers = freshMembers || members;
+      // Only distribute upline bonuses after the member has been placed under a chosen upline (status === "approved")
+      const freshMember = allMembers.find(m => m.id === member.id);
+      if (freshMember && freshMember.status !== "approved") {
+        toast.success("Code redeemed. Member must be placed under an upline before commissions are distributed.");
+        setRedeemModal(null); setRedeemCode("");
+        window.location.reload();
+        setRedeemBusy(false);
+        return;
+      }
       const canEarn = (m) => {
         if (!m || m.status !== "approved") return false;
         return maintenanceStatus(m, freshCodes || codes).isGreen;
       };
-      const allMembers = freshMembers || members;
       let current = member;
       for (let level = 1; level <= MAX_BONUS_LEVEL; level++) {
         const upline = allMembers.find(m => m.id === current.referrer_id);

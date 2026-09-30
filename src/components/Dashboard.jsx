@@ -100,9 +100,14 @@ export default function Dashboard() {
       // Fetch fresh data so upline maintenance status is accurate (not stale from page load)
       const { data: freshMembers } = await supabase.from("members").select("*");
       const { data: freshCodes } = await supabase.from("maintenance_codes").select("*");
-      // Distribute upline bonuses (only to uplines with green/active maintenance status)
-      await distributeUplineBonuses(currentMember, freshMembers || members, freshCodes || allCodes, codeRecord);
-      toast.success("Code redeemed successfully! Upline bonuses distributed.");
+      // Only distribute upline bonuses after the member has been placed under a chosen upline (status === "approved")
+      const freshMember = (freshMembers || members).find(m => m.id === currentMember.id);
+      if (freshMember && freshMember.status !== "approved") {
+        toast.success("Code redeemed. You must be placed under an upline before commissions are distributed.");
+      } else {
+        await distributeUplineBonuses(currentMember, freshMembers || members, freshCodes || allCodes, codeRecord);
+        toast.success("Code redeemed successfully! Upline bonuses distributed.");
+      }
       setCode("");
       window.location.reload();
     } catch (err) {
