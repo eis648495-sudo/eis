@@ -563,7 +563,7 @@ export default function Admin() {
             const activeMaintenance = approved.filter(m => maintenanceStatus(m, codes).isGreen);
             const expiredMaintenance = approved.filter(m => !maintenanceStatus(m, codes).isGreen);
 
-            const renderRow = (m, index) => {
+            const renderRow = (m, index, isExpired = false) => {
               const status = maintenanceStatus(m, codes);
               return (
                 <div key={m.id} className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 px-2 hover:bg-gray-50 rounded-xl transition-colors">
@@ -607,7 +607,7 @@ export default function Admin() {
                     {isSupAdmin && <button onClick={() => setEditMember({ ...m })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>}
                     <button onClick={() => setShowPasswords(s => !s)} className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors" title="Toggle Passwords"><Lock className="w-4 h-4" /></button>
                     {isSupAdmin && <button onClick={() => setEditMember({ ...m })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>}
-                    {m.status === "approved" && (
+                    {isExpired && (
                       <button onClick={() => setConfirmDelete({ type: "member", id: m.id, name: m.full_name || m.username })} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Delete Account"><Trash2 className="w-4 h-4" /></button>
                     )}
                   </div>
@@ -643,7 +643,7 @@ export default function Admin() {
                   <div className="p-2">
                     {expiredMaintenance.length === 0 ? (
                       <p className="text-center py-8 text-gray-400">No expired members</p>
-                    ) : expiredMaintenance.map((m, i) => renderRow(m, i))}
+                    ) : expiredMaintenance.map((m, i) => renderRow(m, i, true))}
                   </div>
                 </div>
               </>
