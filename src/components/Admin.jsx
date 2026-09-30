@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 import { useTable, updateRecord, createRecord, deleteRecord } from "../lib/useData";
 import { supabase } from "../lib/supabase";
 import { getSessionMemberId } from "../lib/auth";
-import { money, formatDate, generateReferralCode, maintenanceStatus, formatTime, LEVEL_CONFIG } from "../lib/helpers";
+import { money, formatDate, generateReferralCode, maintenanceStatus, formatTime, LEVEL_CONFIG, MAX_BONUS_LEVEL } from "../lib/helpers";
 import { Button, Input, Label, Badge } from "./ui";
 import Genealogy from "./Genealogy";
 import MonitoringView from "./MonitoringView";
@@ -135,7 +135,7 @@ export default function Admin() {
     ...(tabVisibility.monitoring ? [{ id: "monitoring", label: "Monitoring", icon: Eye }] : []),
     { id: "gcash", label: "GCash", icon: Smartphone },
     ...(deletedMembers.length > 0 ? [{ id: "deleted", label: `Deleted (${deletedMembers.length})`, icon: Trash2 }] : []),
-    { id: "roles", label: "Roles", icon: UserCog },
+    ...(canManageTabs ? [{ id: "roles", label: "Roles", icon: UserCog }] : []),
     ...(tabVisibility.subadmin ? [{ id: "subadmins", label: "Sub-Admins", icon: Shield }] : []),
     { id: "settings", label: "Settings", icon: Settings },
     { id: "profile", label: "My Profile", icon: User },
@@ -265,19 +265,23 @@ export default function Admin() {
 
   async function deleteMember(id) {
     try {
-      const { error } = await supabase
-        .from("members")
-        .update({ status: "deleted", deleted_date: new Date().toISOString() })
-        .eq("id", id);
+      let { error } = await updateRecord("members", id, { status: "deleted", deleted_date: new Date().toISOString() });
+      // Fallback: external DB may not have the deleted_date column
+      if (error) ({ error } = await supabase.from("members").update({ status: "deleted" }).eq("id", id));
       if (error) throw error;
       toast.success("Account deleted");
       window.location.reload();
-    } catch { toast.error("Failed to delete"); }
+    } catch (err) { toast.error(err?.message || "Failed to delete"); }
   }
 
   async function restoreMember(id) {
-    try { await updateRecord("members", id, { status: "approved", deleted_date: null }); toast.success("Account restored"); window.location.reload(); }
-    catch { toast.error("Failed to restore"); }
+    try {
+      let { error } = await updateRecord("members", id, { status: "approved", deleted_date: null });
+      if (error) ({ error } = await supabase.from("members").update({ status: "approved" }).eq("id", id));
+      if (error) throw error;
+      toast.success("Account restored");
+      window.location.reload();
+    } catch (err) { toast.error(err?.message || "Failed to restore"); }
   }
 
   async function saveEditMember() {
@@ -316,23 +320,15 @@ export default function Admin() {
         if (!m || m.status !== "approved") return false;
         return maintenanceStatus(m, freshCodes || codes).isGreen;
       };
-      const referrer = (freshMembers || members).find(m => m.id === member.referrer_id);
-      if (canEarn(referrer)) {
-        const bonus1 = LEVEL_CONFIG.find(l => l.level === 1)?.bonus_amount || 0;
-        if (bonus1 > 0) await supabase.from("transactions").insert({
-          member_id: referrer.id, type: "referral_bonus", amount: bonus1, bonus_level: 1,
-          description: `Level 1 bonus from ${member.username}`, status: "completed", from_member_id: member.id,
-        });
-      }
-      let current = referrer;
-      for (let level = 2; level <= 5; level++) {
-        if (!current) break;
-        const upline = (freshMembers || members).find(m => m.id === current.referrer_id);
+      const allMembers = freshMembers || members;
+      let current = member;
+      for (let level = 1; level <= MAX_BONUS_LEVEL; level++) {
+        const upline = allMembers.find(m => m.id === current.referrer_id);
         if (!upline) break;
         if (canEarn(upline)) {
           const bonus = LEVEL_CONFIG.find(l => l.level === level)?.bonus_amount || 0;
           if (bonus > 0) await supabase.from("transactions").insert({
-            member_id: upline.id, type: "level_bonus", amount: bonus, bonus_level: level,
+            member_id: upline.id, type: "referral_bonus", amount: bonus, bonus_level: level,
             description: `Level ${level} bonus from ${member.username}`, status: "completed", from_member_id: member.id,
           });
         }
@@ -576,7 +572,7 @@ export default function Admin() {
             const activeMaintenance = approved.filter(m => maintenanceStatus(m, codes).isGreen);
             const expiredMaintenance = approved.filter(m => !maintenanceStatus(m, codes).isGreen);
 
-            const renderRow = (m, index) => {
+            const renderRow = (m, index, isExpired = false) => {
               const status = maintenanceStatus(m, codes);
               return (
                 <div key={m.id} className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 px-2 hover:bg-gray-50 rounded-xl transition-colors">
@@ -620,7 +616,7 @@ export default function Admin() {
                     {isSupAdmin && <button onClick={() => setEditMember({ ...m })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>}
                     <button onClick={() => setShowPasswords(s => !s)} className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors" title="Toggle Passwords"><Lock className="w-4 h-4" /></button>
                     {isSupAdmin && <button onClick={() => setEditMember({ ...m })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>}
-                    {m.status === "approved" && (
+                    {isExpired && getDirectDownlineCount(m.id) === 0 && (
                       <button onClick={() => setConfirmDelete({ type: "member", id: m.id, name: m.full_name || m.username })} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Delete Account"><Trash2 className="w-4 h-4" /></button>
                     )}
                   </div>
@@ -656,7 +652,7 @@ export default function Admin() {
                   <div className="p-2">
                     {expiredMaintenance.length === 0 ? (
                       <p className="text-center py-8 text-gray-400">No expired members</p>
-                    ) : expiredMaintenance.map((m, i) => renderRow(m, i))}
+                    ) : expiredMaintenance.map((m, i) => renderRow(m, i, true))}
                   </div>
                 </div>
               </>
@@ -1262,6 +1258,15 @@ export default function Admin() {
                   <div><p className="text-xs text-gray-500">Tree Level</p><p className="font-bold text-gray-900">{profileMember.tree_level || 0}</p></div>
                   <div><p className="text-xs text-gray-500">Direct Downlines</p><p className="font-bold text-gray-900">{profileMember.direct_downlines_count || 0}</p></div>
                 </div>
+                {profileMember.referral_code && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 mb-2">Referral Link</p>
+                    <div className="flex gap-2">
+                      <div className="flex-1 bg-gray-50 rounded-xl px-4 py-3 border border-amber-200 text-sm text-gray-700 truncate">{window.location.origin}/Register?ref={profileMember.referral_code}</div>
+                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/Register?ref=${profileMember.referral_code}`); toast.success("Referral link copied!"); }} className="px-4 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors flex-shrink-0" title="Copy referral link"><Copy className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Personal Information */}
@@ -1289,7 +1294,13 @@ export default function Admin() {
               <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">GCash Details</h2>
                 <div className="space-y-4">
-                  <div><Label>GCash Number</Label><Input value={profileForm.gcash_number || ""} onChange={e => setProfileForm({ ...profileForm, gcash_number: e.target.value })} placeholder="09XX XXX XXXX" /></div>
+                  <div>
+                    <Label>GCash Number</Label>
+                    <div className="flex gap-2">
+                      <Input value={profileForm.gcash_number || ""} onChange={e => setProfileForm({ ...profileForm, gcash_number: e.target.value })} placeholder="09XX XXX XXXX" className="flex-1" />
+                      <button onClick={() => { if (profileForm.gcash_number) { navigator.clipboard.writeText(profileForm.gcash_number); toast.success("GCash number copied!"); } }} className="px-4 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors flex-shrink-0" title="Copy GCash number"><Copy className="w-4 h-4" /></button>
+                    </div>
+                  </div>
                   <div><Label>GCash Name</Label><Input value={profileForm.gcash_name || ""} onChange={e => setProfileForm({ ...profileForm, gcash_name: e.target.value })} placeholder="Registered name" /></div>
                 </div>
               </div>

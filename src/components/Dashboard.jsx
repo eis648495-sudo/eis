@@ -5,7 +5,7 @@ import { Wallet, ArrowRight, KeyRound, ChevronDown, ChevronUp, Ticket, Clock, Al
 import toast from "react-hot-toast";
 import { useTable, useCurrentMember, createRecord } from "../lib/useData";
 import { supabase } from "../lib/supabase";
-import { money, formatDate, withdrawalCharge, LEVEL_CONFIG, maintenanceStatus } from "../lib/helpers";
+import { money, formatDate, withdrawalCharge, LEVEL_CONFIG, MAX_BONUS_LEVEL, maintenanceStatus } from "../lib/helpers";
 import { Button, Badge } from "./ui";
 
 export default function Dashboard() {
@@ -119,35 +119,17 @@ export default function Dashboard() {
       return status.isGreen;
     };
 
-    // Level 1: bonus goes to direct referrer (who shared the link)
-    const referrer = allMembers.find(m => m.id === member.referrer_id);
-    if (canEarn(referrer)) {
-      const bonus1 = LEVEL_CONFIG.find(l => l.level === 1)?.bonus_amount || 0;
-      if (bonus1 > 0) {
-        await supabase.from("transactions").insert({
-          member_id: referrer.id,
-          type: "referral_bonus",
-          amount: bonus1,
-          bonus_level: 1,
-          description: `Level 1 bonus from ${member.username}`,
-          status: "completed",
-          from_member_id: member.id,
-        });
-      }
-    }
-    // Levels 2-5: walk up the referrer chain (unilevel)
-    let current = referrer;
-    for (let level = 2; level <= 5; level++) {
-      if (!current) break;
+    // Walk up the referrer chain, paying bonuses at each level (1 through MAX_BONUS_LEVEL)
+    let current = member;
+    for (let level = 1; level <= MAX_BONUS_LEVEL; level++) {
       const upline = allMembers.find(m => m.id === current.referrer_id);
       if (!upline) break;
-      // Skip uplines who haven't redeemed (red banner) — they don't earn
       if (canEarn(upline)) {
         const bonus = LEVEL_CONFIG.find(l => l.level === level)?.bonus_amount || 0;
         if (bonus > 0) {
           await supabase.from("transactions").insert({
             member_id: upline.id,
-            type: "level_bonus",
+            type: "referral_bonus",
             amount: bonus,
             bonus_level: level,
             description: `Level ${level} bonus from ${member.username}`,

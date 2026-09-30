@@ -123,9 +123,9 @@ create table if not exists public.audit_logs (
   created_at timestamptz not null default now()
 );
 
-insert into public.level_bonuses(level,bonus_amount) values
-(1,150),(2,100),(3,50),(4,20),(5,10)
-on conflict(level) do update set bonus_amount=excluded.bonus_amount;
+insert into public.level_bonuses(level,bonus_amount,is_active) values
+(1,200,true),(2,0,false),(3,0,false),(4,0,false),(5,0,false)
+on conflict(level) do update set bonus_amount=excluded.bonus_amount, is_active=excluded.is_active;
 
 insert into public.system_settings(setting_key,setting_value,description) values
 ('tab_monitoring_visible','true','Monitoring tab visibility'),
