@@ -69,6 +69,15 @@ export default function Profile() {
     }
   }
 
+  const referralLink = currentMember?.referral_code ? `${window.location.origin}/Register?ref=${currentMember.referral_code}` : "";
+
+  function copyReferral() {
+    navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    toast.success("Referral link copied!");
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   const fields = [
     { key: "full_name", label: "Full Name" },
     { key: "age", label: "Age", type: "number" },
@@ -112,6 +121,15 @@ export default function Profile() {
           <div><p className="text-xs text-gray-500">Tree Level</p><p className="font-bold text-gray-900">{currentMember.tree_level || 0}</p></div>
           <div><p className="text-xs text-gray-500">Direct Downlines</p><p className="font-bold text-gray-900">{currentMember.direct_downlines_count || 0}</p></div>
         </div>
+        {currentMember.referral_code && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <p className="text-xs text-gray-500 mb-2">Referral Link</p>
+            <div className="flex gap-2">
+              <div className="flex-1 bg-gray-50 rounded-xl px-4 py-3 border border-amber-200 text-sm text-gray-700 truncate">{referralLink}</div>
+              <Button onClick={copyReferral} variant="outline" className="px-4">{copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}</Button>
+            </div>
+          </div>
+        )}
       </motion.div>
 
       {/* Editable fields */}

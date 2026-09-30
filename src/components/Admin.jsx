@@ -1258,6 +1258,15 @@ export default function Admin() {
                   <div><p className="text-xs text-gray-500">Tree Level</p><p className="font-bold text-gray-900">{profileMember.tree_level || 0}</p></div>
                   <div><p className="text-xs text-gray-500">Direct Downlines</p><p className="font-bold text-gray-900">{profileMember.direct_downlines_count || 0}</p></div>
                 </div>
+                {profileMember.referral_code && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 mb-2">Referral Link</p>
+                    <div className="flex gap-2">
+                      <div className="flex-1 bg-gray-50 rounded-xl px-4 py-3 border border-amber-200 text-sm text-gray-700 truncate">{window.location.origin}/Register?ref={profileMember.referral_code}</div>
+                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/Register?ref=${profileMember.referral_code}`); toast.success("Referral link copied!"); }} className="px-4 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors flex-shrink-0" title="Copy referral link"><Copy className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Personal Information */}
@@ -1285,7 +1294,13 @@ export default function Admin() {
               <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-4">GCash Details</h2>
                 <div className="space-y-4">
-                  <div><Label>GCash Number</Label><Input value={profileForm.gcash_number || ""} onChange={e => setProfileForm({ ...profileForm, gcash_number: e.target.value })} placeholder="09XX XXX XXXX" /></div>
+                  <div>
+                    <Label>GCash Number</Label>
+                    <div className="flex gap-2">
+                      <Input value={profileForm.gcash_number || ""} onChange={e => setProfileForm({ ...profileForm, gcash_number: e.target.value })} placeholder="09XX XXX XXXX" className="flex-1" />
+                      <button onClick={() => { if (profileForm.gcash_number) { navigator.clipboard.writeText(profileForm.gcash_number); toast.success("GCash number copied!"); } }} className="px-4 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors flex-shrink-0" title="Copy GCash number"><Copy className="w-4 h-4" /></button>
+                    </div>
+                  </div>
                   <div><Label>GCash Name</Label><Input value={profileForm.gcash_name || ""} onChange={e => setProfileForm({ ...profileForm, gcash_name: e.target.value })} placeholder="Registered name" /></div>
                 </div>
               </div>
