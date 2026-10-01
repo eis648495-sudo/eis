@@ -128,6 +128,7 @@ export default function Admin() {
 
   const tabs = [
     { id: "members", label: `Members (${activeMembers.length})`, icon: Users },
+    { id: "pending", label: `Pending Approvals${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ""}`, icon: Clock },
     { id: "codes", label: "Codes", icon: Ticket },
     { id: "withdrawals", label: `Withdrawals${pendingWithdrawals.length > 0 ? ` (${pendingWithdrawals.length})` : ""}`, icon: Wallet },
     { id: "history", label: "Transaction History", icon: FileText },
@@ -316,11 +317,20 @@ export default function Admin() {
       });
       const { data: freshMembers } = await supabase.from("members").select("*");
       const { data: freshCodes } = await supabase.from("maintenance_codes").select("*");
+      const allMembers = freshMembers || members;
+      // Only distribute upline bonuses after the member has been placed under a chosen upline (status === "approved")
+      const freshMember = allMembers.find(m => m.id === member.id);
+      if (freshMember && freshMember.status !== "approved") {
+        toast.success("Code redeemed. Member must be placed under an upline before commissions are distributed.");
+        setRedeemModal(null); setRedeemCode("");
+        window.location.reload();
+        setRedeemBusy(false);
+        return;
+      }
       const canEarn = (m) => {
         if (!m || m.status !== "approved") return false;
         return maintenanceStatus(m, freshCodes || codes).isGreen;
       };
-      const allMembers = freshMembers || members;
       let current = member;
       for (let level = 1; level <= MAX_BONUS_LEVEL; level++) {
         const upline = allMembers.find(m => m.id === current.referrer_id);
@@ -437,9 +447,17 @@ export default function Admin() {
     catch { toast.error("Failed to verify receipt"); }
   }
 
-  async function rejectReceipt(id) {
-    try { await updateRecord("gcash_receipts", id, { status: "rejected" }); toast.success("Receipt rejected"); window.location.reload(); }
-    catch { toast.error("Failed to reject receipt"); }
+  async function deleteReceipt(id) {
+    try {
+      const receipt = receipts.find(r => r.id === id);
+      if (receipt?.receipt_url && !receipt.receipt_url.startsWith("data:") && !receipt.receipt_url.startsWith("http")) {
+        const path = receipt.receipt_url.replace(/^receipts\//, "");
+        await supabase.storage.from("receipts").remove([path]);
+      }
+      await deleteRecord("gcash_receipts", id);
+      toast.success("Receipt deleted");
+      window.location.reload();
+    } catch { toast.error("Failed to delete receipt"); }
   }
 
   async function saveMinAmount() {
@@ -545,27 +563,6 @@ export default function Admin() {
             </Button>
           </div>
 
-          {/* Pending Members */}
-          {pendingMembers.length > 0 && (
-            <div className="bg-amber-50 rounded-2xl border border-amber-200 p-4">
-              <h3 className="font-bold text-amber-900 mb-3 flex items-center gap-2"><Users className="w-4 h-4" /> Pending Approvals ({pendingMembers.length})</h3>
-              <div className="space-y-2">
-                {pendingMembers.map(m => (
-                  <div key={m.id} className="flex items-center justify-between bg-white rounded-xl p-3 border border-amber-100">
-                    <div>
-                      <p className="font-medium text-gray-900">{m.full_name} <span className="text-gray-400 text-sm">@{m.username}</span></p>
-                      <p className="text-xs text-gray-500">Referral: {m.referral_code || "—"} • Referred by: {members.find(r => r.id === m.referrer_id)?.username || "Direct"}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button onClick={() => approveMember(m.id)} size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white h-8 px-3 text-xs"><Check className="w-3 h-3 mr-1" /> Approve & Place</Button>
-                      <Button onClick={() => rejectMember(m.id)} size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 h-8 px-3 text-xs"><X className="w-3 h-3" /></Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Members List — Card Layout */}
           {(() => {
             const approved = filteredMembers.filter(m => m.status === "approved");
@@ -658,6 +655,60 @@ export default function Admin() {
               </>
             );
           })()}
+        </div>
+      )}
+
+      {/* Pending Approvals Tab */}
+      {tab === "pending" && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="p-5 border-b border-gray-100 bg-amber-50 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Pending Approvals</h3>
+                  <p className="text-sm text-gray-500">Members awaiting approval.</p>
+                </div>
+              </div>
+              <Badge className="bg-amber-100 text-amber-700">{pendingMembers.length} pending</Badge>
+            </div>
+            <div className="p-4 space-y-3">
+              {pendingMembers.length === 0 ? (
+                <div className="text-center py-12">
+                  <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-400">No pending approvals.</p>
+                </div>
+              ) : (
+                pendingMembers.map(m => {
+                  const status = maintenanceStatus(m, codes);
+                  return (
+                    <div key={m.id} className="flex items-center justify-between bg-amber-50 rounded-xl p-4 border border-amber-100">
+                      <div>
+                        <p className="font-medium text-gray-900">{m.full_name} <span className="text-gray-400 text-sm">@{m.username}</span></p>
+                        <p className="text-xs text-gray-500 mt-0.5">Referral: {m.referral_code || "—"} • Referred by: {members.find(r => r.id === m.referrer_id)?.username || "Direct"}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {status.isGreen ? (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 rounded-lg">
+                            <div className="w-2 h-2 bg-green-500 rounded-full" />
+                            <span className="text-sm font-medium text-green-700">{formatTime(status.secondsLeft)}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 rounded-lg">
+                            <div className="w-2 h-2 bg-red-500 rounded-full" />
+                            <span className="text-sm font-medium text-red-700">{status.secondsLeft > 0 ? formatTime(status.secondsLeft) : "Expired"}</span>
+                          </div>
+                        )}
+                        <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -944,12 +995,12 @@ export default function Admin() {
                           {r.status === "pending" && <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>}
                           {r.status === "verified" && <Badge className="bg-green-100 text-green-700">Verified</Badge>}
                           {r.status === "rejected" && <Badge className="bg-red-100 text-red-700">Rejected</Badge>}
-                          {r.status === "pending" && (
-                            <div className="flex gap-2">
+                          <div className="flex gap-2">
+                            {r.status === "pending" && (
                               <Button onClick={() => verifyReceipt(r.id)} size="sm" className="bg-green-600 hover:bg-green-700 text-white h-8 px-3 text-xs"><Check className="w-3 h-3 mr-1" /> Verify</Button>
-                              <Button onClick={() => rejectReceipt(r.id)} size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 h-8 px-3 text-xs"><X className="w-3 h-3 mr-1" /> Reject</Button>
-                            </div>
-                          )}
+                            )}
+                            <Button onClick={() => deleteReceipt(r.id)} size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 h-8 px-3 text-xs"><Trash2 className="w-3 h-3 mr-1" /> Delete</Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1479,12 +1530,12 @@ export default function Admin() {
                     <Check className="w-4 h-4 mr-1" /> Verify
                   </Button>
                   <Button
-                    onClick={() => { rejectReceipt(previewReceipt.id); setPreviewReceipt(null); }}
+                    onClick={() => { deleteReceipt(previewReceipt.id); setPreviewReceipt(null); }}
                     size="sm"
                     variant="outline"
                     className="border-red-200 text-red-600 hover:bg-red-50"
                   >
-                    <X className="w-4 h-4 mr-1" /> Reject
+                    <Trash2 className="w-4 h-4 mr-1" /> Delete
                   </Button>
                 </div>
               )}

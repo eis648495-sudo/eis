@@ -18,6 +18,7 @@ export default function Register() {
   const [showPwd, setShowPwd] = useState(false);
   const [busy, setBusy] = useState(false);
   const [referrerInfo, setReferrerInfo] = useState(null);
+  const [usernameStatus, setUsernameStatus] = useState("idle"); // idle | checking | taken | available
 
   useEffect(() => {
     if (!ref) return;
@@ -26,6 +27,18 @@ export default function Register() {
       if (data?.[0]) setReferrerInfo(data[0]);
     })();
   }, [ref]);
+
+  // Live username availability check (debounced)
+  useEffect(() => {
+    const username = form.username.trim();
+    if (!username) { setUsernameStatus("idle"); return; }
+    setUsernameStatus("checking");
+    const timer = setTimeout(async () => {
+      const { data: existing } = await supabase.from("members").select("id").ilike("username", username).limit(1);
+      setUsernameStatus(existing?.length > 0 ? "taken" : "available");
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [form.username]);
 
   async function submit(e) {
     e.preventDefault();
@@ -37,9 +50,13 @@ export default function Register() {
       toast.error("Password must be at least 6 characters");
       return;
     }
+    if (usernameStatus === "taken") {
+      toast.error("Username is already taken. Please choose another.");
+      return;
+    }
     setBusy(true);
     try {
-      const { data: existing } = await supabase.from("members").select("id").eq("username", form.username).limit(1);
+      const { data: existing } = await supabase.from("members").select("id").ilike("username", form.username.trim()).limit(1);
       if (existing?.length > 0) {
         toast.error("Username already taken");
         setBusy(false);
@@ -102,8 +119,20 @@ export default function Register() {
               <Label>Username *</Label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="Choose a username" className="pl-12" required />
+                <Input value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} placeholder="Choose a username" className={`pl-12 ${usernameStatus === "taken" ? "border-red-400 focus:border-red-500" : usernameStatus === "available" ? "border-green-400 focus:border-green-500" : ""}`} required />
+                {usernameStatus === "taken" && (
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-red-500 text-sm font-medium">✕ Taken</span>
+                )}
+                {usernameStatus === "available" && (
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500 text-sm font-medium">✓ Available</span>
+                )}
+                {usernameStatus === "checking" && (
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">Checking...</span>
+                )}
               </div>
+              {usernameStatus === "taken" && (
+                <p className="text-sm text-red-500 font-medium">This username is already taken. Please choose another.</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Password *</Label>
