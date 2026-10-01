@@ -681,15 +681,31 @@ export default function Admin() {
                   <p className="text-gray-400">No pending approvals.</p>
                 </div>
               ) : (
-                pendingMembers.map(m => (
-                  <div key={m.id} className="flex items-center justify-between bg-amber-50 rounded-xl p-4 border border-amber-100">
-                    <div>
-                      <p className="font-medium text-gray-900">{m.full_name} <span className="text-gray-400 text-sm">@{m.username}</span></p>
-                      <p className="text-xs text-gray-500 mt-0.5">Referral: {m.referral_code || "—"} • Referred by: {members.find(r => r.id === m.referrer_id)?.username || "Direct"}</p>
+                pendingMembers.map(m => {
+                  const status = maintenanceStatus(m, codes);
+                  return (
+                    <div key={m.id} className="flex items-center justify-between bg-amber-50 rounded-xl p-4 border border-amber-100">
+                      <div>
+                        <p className="font-medium text-gray-900">{m.full_name} <span className="text-gray-400 text-sm">@{m.username}</span></p>
+                        <p className="text-xs text-gray-500 mt-0.5">Referral: {m.referral_code || "—"} • Referred by: {members.find(r => r.id === m.referrer_id)?.username || "Direct"}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {status.isGreen ? (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 rounded-lg">
+                            <div className="w-2 h-2 bg-green-500 rounded-full" />
+                            <span className="text-sm font-medium text-green-700">{formatTime(status.secondsLeft)}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 rounded-lg">
+                            <div className="w-2 h-2 bg-red-500 rounded-full" />
+                            <span className="text-sm font-medium text-red-700">{status.secondsLeft > 0 ? formatTime(status.secondsLeft) : "Expired"}</span>
+                          </div>
+                        )}
+                        <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>
+                      </div>
                     </div>
-                    <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
