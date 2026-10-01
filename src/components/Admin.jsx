@@ -128,6 +128,7 @@ export default function Admin() {
 
   const tabs = [
     { id: "members", label: `Members (${activeMembers.length})`, icon: Users },
+    { id: "pending", label: `Pending Approvals${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ""}`, icon: Clock },
     { id: "codes", label: "Codes", icon: Ticket },
     { id: "withdrawals", label: `Withdrawals${pendingWithdrawals.length > 0 ? ` (${pendingWithdrawals.length})` : ""}`, icon: Wallet },
     { id: "history", label: "Transaction History", icon: FileText },
@@ -562,27 +563,6 @@ export default function Admin() {
             </Button>
           </div>
 
-          {/* Pending Members */}
-          {pendingMembers.length > 0 && (
-            <div className="bg-amber-50 rounded-2xl border border-amber-200 p-4">
-              <h3 className="font-bold text-amber-900 mb-3 flex items-center gap-2"><Users className="w-4 h-4" /> Pending Approvals ({pendingMembers.length})</h3>
-              <div className="space-y-2">
-                {pendingMembers.map(m => (
-                  <div key={m.id} className="flex items-center justify-between bg-white rounded-xl p-3 border border-amber-100">
-                    <div>
-                      <p className="font-medium text-gray-900">{m.full_name} <span className="text-gray-400 text-sm">@{m.username}</span></p>
-                      <p className="text-xs text-gray-500">Referral: {m.referral_code || "—"} • Referred by: {members.find(r => r.id === m.referrer_id)?.username || "Direct"}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button onClick={() => approveMember(m.id)} size="sm" className="bg-emerald-500 hover:bg-emerald-600 text-white h-8 px-3 text-xs"><Check className="w-3 h-3 mr-1" /> Approve & Place</Button>
-                      <Button onClick={() => rejectMember(m.id)} size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 h-8 px-3 text-xs"><X className="w-3 h-3" /></Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Members List — Card Layout */}
           {(() => {
             const approved = filteredMembers.filter(m => m.status === "approved");
@@ -675,6 +655,44 @@ export default function Admin() {
               </>
             );
           })()}
+        </div>
+      )}
+
+      {/* Pending Approvals Tab */}
+      {tab === "pending" && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="p-5 border-b border-gray-100 bg-amber-50 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Pending Approvals</h3>
+                  <p className="text-sm text-gray-500">Members awaiting approval.</p>
+                </div>
+              </div>
+              <Badge className="bg-amber-100 text-amber-700">{pendingMembers.length} pending</Badge>
+            </div>
+            <div className="p-4 space-y-3">
+              {pendingMembers.length === 0 ? (
+                <div className="text-center py-12">
+                  <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-400">No pending approvals.</p>
+                </div>
+              ) : (
+                pendingMembers.map(m => (
+                  <div key={m.id} className="flex items-center justify-between bg-amber-50 rounded-xl p-4 border border-amber-100">
+                    <div>
+                      <p className="font-medium text-gray-900">{m.full_name} <span className="text-gray-400 text-sm">@{m.username}</span></p>
+                      <p className="text-xs text-gray-500 mt-0.5">Referral: {m.referral_code || "—"} • Referred by: {members.find(r => r.id === m.referrer_id)?.username || "Direct"}</p>
+                    </div>
+                    <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       )}
 
