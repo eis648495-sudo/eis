@@ -446,9 +446,17 @@ export default function Admin() {
     catch { toast.error("Failed to verify receipt"); }
   }
 
-  async function rejectReceipt(id) {
-    try { await updateRecord("gcash_receipts", id, { status: "rejected" }); toast.success("Receipt rejected"); window.location.reload(); }
-    catch { toast.error("Failed to reject receipt"); }
+  async function deleteReceipt(id) {
+    try {
+      const receipt = receipts.find(r => r.id === id);
+      if (receipt?.receipt_url && !receipt.receipt_url.startsWith("data:") && !receipt.receipt_url.startsWith("http")) {
+        const path = receipt.receipt_url.replace(/^receipts\//, "");
+        await supabase.storage.from("receipts").remove([path]);
+      }
+      await deleteRecord("gcash_receipts", id);
+      toast.success("Receipt deleted");
+      window.location.reload();
+    } catch { toast.error("Failed to delete receipt"); }
   }
 
   async function saveMinAmount() {
@@ -953,12 +961,12 @@ export default function Admin() {
                           {r.status === "pending" && <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>}
                           {r.status === "verified" && <Badge className="bg-green-100 text-green-700">Verified</Badge>}
                           {r.status === "rejected" && <Badge className="bg-red-100 text-red-700">Rejected</Badge>}
-                          {r.status === "pending" && (
-                            <div className="flex gap-2">
+                          <div className="flex gap-2">
+                            {r.status === "pending" && (
                               <Button onClick={() => verifyReceipt(r.id)} size="sm" className="bg-green-600 hover:bg-green-700 text-white h-8 px-3 text-xs"><Check className="w-3 h-3 mr-1" /> Verify</Button>
-                              <Button onClick={() => rejectReceipt(r.id)} size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 h-8 px-3 text-xs"><X className="w-3 h-3 mr-1" /> Reject</Button>
-                            </div>
-                          )}
+                            )}
+                            <Button onClick={() => deleteReceipt(r.id)} size="sm" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 h-8 px-3 text-xs"><Trash2 className="w-3 h-3 mr-1" /> Delete</Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1488,12 +1496,12 @@ export default function Admin() {
                     <Check className="w-4 h-4 mr-1" /> Verify
                   </Button>
                   <Button
-                    onClick={() => { rejectReceipt(previewReceipt.id); setPreviewReceipt(null); }}
+                    onClick={() => { deleteReceipt(previewReceipt.id); setPreviewReceipt(null); }}
                     size="sm"
                     variant="outline"
                     className="border-red-200 text-red-600 hover:bg-red-50"
                   >
-                    <X className="w-4 h-4 mr-1" /> Reject
+                    <Trash2 className="w-4 h-4 mr-1" /> Delete
                   </Button>
                 </div>
               )}
