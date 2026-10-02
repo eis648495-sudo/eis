@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Smartphone, Copy, Upload, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable } from "../lib/useData";
@@ -9,9 +9,31 @@ export function GCashButton() {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pos, setPos] = useState(null);
+  const [popupAbove, setPopupAbove] = useState(false);
   const memberId = getSessionMemberId();
   const { data: gcashInfo = [] } = useTable("gcash_info");
   const active = gcashInfo.find(g => g.is_active) || gcashInfo[0];
+
+  const btnRef = useRef(null);
+  const dragging = useRef(false);
+  const dragStart = useRef(null);
+  const posStart = useRef(null);
+  const moved = useRef(false);
+
+  // Default position: bottom-right corner
+  useEffect(() => {
+    if (pos === null) {
+      const isMobile = window.innerWidth < 1024;
+      setPos({ x: window.innerWidth - (isMobile ? 150 : 180), y: window.innerHeight - (isMobile ? 80 : 100) });
+    }
+  }, [pos]);
+
+  // Keep popup on the correct side of the button
+  useEffect(() => {
+    if (!open || !pos) return;
+    setPopupAbove(pos.y > window.innerHeight * 0.5);
+  }, [open, pos]);
 
   if (!memberId || !active) return null;
 
@@ -76,18 +98,62 @@ export function GCashButton() {
     });
   }
 
+  const onPointerDown = (e) => {
+    e.preventDefault();
+    dragging.current = true;
+    moved.current = false;
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    posStart.current = { ...pos };
+  };
+
+  useEffect(() => {
+    function handleMove(e) {
+      if (!dragging.current || !posStart.current) return;
+      const dx = e.clientX - dragStart.current.x;
+      const dy = e.clientY - dragStart.current.y;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved.current = true;
+      const btn = btnRef.current;
+      const bw = btn?.offsetWidth || 140;
+      const bh = btn?.offsetHeight || 48;
+      const nx = Math.max(8, Math.min(window.innerWidth - bw - 8, posStart.current.x + dx));
+      const ny = Math.max(8, Math.min(window.innerHeight - bh - 8, posStart.current.y + dy));
+      setPos({ x: nx, y: ny });
+    }
+    function handleUp() {
+      if (!dragging.current) return;
+      dragging.current = false;
+      if (!moved.current) setOpen(o => !o);
+    }
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+  }, []);
+
   return (
     <>
       <button
-        onClick={() => setOpen(!open)}
-        className="fixed bottom-8 right-4 left-auto lg:bottom-16 lg:right-6 z-50 h-12 lg:h-14 pl-4 pr-5 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg lg:shadow-xl flex items-center gap-2"
-        title="GCash Payment"
+        ref={btnRef}
+        onPointerDown={onPointerDown}
+        style={pos ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto" } : undefined}
+        className="fixed z-50 h-12 lg:h-14 pl-4 pr-5 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg lg:shadow-xl flex items-center gap-2 touch-none select-none cursor-grab active:cursor-grabbing"
+        title="GCash Payment — drag to move"
       >
         <Smartphone className="w-5 h-5 lg:w-6 lg:h-6" />
         <span className="font-bold text-sm tracking-wide">GCASH<span className="hidden lg:inline"> PAYMENT</span></span>
       </button>
-      {open && (
-        <div className="fixed bottom-24 right-4 left-auto lg:bottom-32 lg:right-6 z-50 w-80 max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+      {open && pos && (
+        <div
+          className="fixed z-50 w-80 max-w-[calc(100vw-1rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
+          style={{
+            left: Math.max(8, Math.min(window.innerWidth - 336, pos.x)),
+            ...(popupAbove
+              ? { bottom: window.innerHeight - pos.y + 8, top: "auto" }
+              : { top: pos.y + 56, bottom: "auto" }),
+          }}
+        >
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-1.5 bg-white/20 rounded-lg">
