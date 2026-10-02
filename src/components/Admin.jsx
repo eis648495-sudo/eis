@@ -127,19 +127,19 @@ export default function Admin() {
     });
 
   const tabs = [
-    { id: "members", label: `Members (${activeMembers.length})`, icon: Users },
-    { id: "pending", label: `Pending Approvals${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ""}`, icon: Clock },
-    { id: "codes", label: "Codes", icon: Ticket },
-    { id: "withdrawals", label: `Withdrawals${pendingWithdrawals.length > 0 ? ` (${pendingWithdrawals.length})` : ""}`, icon: Wallet },
-    { id: "history", label: "Transaction History", icon: FileText },
-    { id: "genealogy", label: "Genealogy", icon: GitBranch },
-    ...(tabVisibility.monitoring ? [{ id: "monitoring", label: "Monitoring", icon: Eye }] : []),
-    { id: "gcash", label: "GCash", icon: Smartphone },
-    ...(deletedMembers.length > 0 ? [{ id: "deleted", label: `Deleted (${deletedMembers.length})`, icon: Trash2 }] : []),
-    ...(canManageTabs ? [{ id: "roles", label: "Roles", icon: UserCog }] : []),
-    ...(tabVisibility.subadmin ? [{ id: "subadmins", label: "Sub-Admins", icon: Shield }] : []),
-    { id: "settings", label: "Settings", icon: Settings },
-    { id: "profile", label: "My Profile", icon: User },
+    { id: "members", label: `Members (${activeMembers.length})`, icon: Users, active: "from-amber-500 to-orange-600", inactive: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
+    { id: "pending", label: `Pending Approvals${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ""}`, icon: Clock, active: "from-yellow-500 to-amber-600", inactive: "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100" },
+    { id: "codes", label: "Codes", icon: Ticket, active: "from-teal-500 to-emerald-600", inactive: "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100" },
+    { id: "withdrawals", label: `Withdrawals${pendingWithdrawals.length > 0 ? ` (${pendingWithdrawals.length})` : ""}`, icon: Wallet, active: "from-blue-500 to-indigo-600", inactive: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
+    { id: "history", label: "Transaction History", icon: FileText, active: "from-violet-500 to-purple-600", inactive: "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100" },
+    { id: "genealogy", label: "Genealogy", icon: GitBranch, active: "from-pink-500 to-rose-600", inactive: "bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100" },
+    ...(tabVisibility.monitoring ? [{ id: "monitoring", label: "Monitoring", icon: Eye, active: "from-cyan-500 to-sky-600", inactive: "bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100" }] : []),
+    { id: "gcash", label: "GCash", icon: Smartphone, active: "from-indigo-500 to-blue-600", inactive: "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100" },
+    ...(deletedMembers.length > 0 ? [{ id: "deleted", label: `Deleted (${deletedMembers.length})`, icon: Trash2, active: "from-red-500 to-rose-600", inactive: "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" }] : []),
+    ...(canManageTabs ? [{ id: "roles", label: "Roles", icon: UserCog, active: "from-fuchsia-500 to-pink-600", inactive: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 hover:bg-fuchsia-100" }] : []),
+    ...(tabVisibility.subadmin ? [{ id: "subadmins", label: "Sub-Admins", icon: Shield, active: "from-emerald-500 to-green-600", inactive: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" }] : []),
+    { id: "settings", label: "Settings", icon: Settings, active: "from-slate-500 to-gray-600", inactive: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100" },
+    { id: "profile", label: "My Profile", icon: User, active: "from-violet-500 to-indigo-600", inactive: "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100" },
   ];
 
   function getMemberEarnings(memberId) {
@@ -543,7 +543,7 @@ export default function Admin() {
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${tab === t.id ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all border ${tab === t.id ? `bg-gradient-to-r ${t.active} text-white shadow-lg border-transparent` : t.inactive}`}>
             <t.icon className="w-4 h-4" /> {t.label}
           </button>
         ))}
