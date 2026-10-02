@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { GitBranch, Search, ArrowRight, Users, ZoomIn, ZoomOut, User, Clock, Activity, UserPlus, X, Heart } from "lucide-react";
@@ -11,6 +11,10 @@ export default function Genealogy() {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [zoom, setZoom] = useState(100);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef(null);
+  const panStart = useRef(null);
   const [placementTarget, setPlacementTarget] = useState(null);
   const [placing, setPlacing] = useState(false);
   const [, setTick] = useState(0);
@@ -224,6 +228,27 @@ export default function Genealogy() {
     );
   }
 
+  const handlePointerDown = (e) => {
+    setIsDragging(true);
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    panStart.current = { ...pan };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    setPan({ x: panStart.current.x + dx, y: panStart.current.y + dy });
+  };
+
+  const handlePointerUp = (e) => {
+    setIsDragging(false);
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
+
+  const resetView = () => { setPan({ x: 0, y: 0 }); setZoom(100); };
+
   return (
     <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-6">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -332,10 +357,19 @@ export default function Genealogy() {
               <button onClick={() => setZoom(z => Math.min(200, z + 10))} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-gray-600">
                 <ZoomIn className="w-4 h-4" />
               </button>
+              <button onClick={resetView} className="ml-1 px-2.5 h-8 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 text-gray-600 text-xs font-medium">
+                Reset
+              </button>
             </div>
           </div>
-          <div className="flex-1 overflow-auto p-4">
-            <div style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center', transition: 'transform 0.2s' }}>
+          <div
+            className="flex-1 overflow-hidden p-4 cursor-grab active:cursor-grabbing touch-none select-none"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerUp}
+          >
+            <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom / 100})`, transformOrigin: 'top center', transition: isDragging ? 'none' : 'transform 0.2s' }}>
               {selected ? <TreeNode member={selected} /> : (
                 <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                   <Users className="w-12 h-12 mb-3 text-gray-300" />
