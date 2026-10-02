@@ -363,7 +363,7 @@ export default function Genealogy() {
                 <ZoomOut className="w-5 h-5" />
               </button>
               <span className="text-sm font-bold text-gray-700 w-14 text-center">{zoom}%</span>
-              <button onClick={() => setZoom(z => Math.min(200, z + 1))} className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-lg hover:scale-110 active:scale-95 transition-all">
+              <button onClick={() => setZoom(z => Math.min(200, z + 10))} className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-lg hover:scale-110 active:scale-95 transition-all">
                 <ZoomIn className="w-5 h-5" />
               </button>
 
