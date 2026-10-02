@@ -22,6 +22,7 @@ export default function Dashboard() {
   const { currentMember } = useCurrentMember(members);
 
   const termsVisible = settings.find(s => s.setting_key === "tab_terms_visible")?.setting_value !== "false";
+  const productConversionVisible = settings.find(s => s.setting_key === "tab_product_conversion_visible")?.setting_value !== "false";
   const minWithdrawal = settings.find(s => s.setting_key === "withdrawal_minimum_amount")?.setting_value || "300";
   const minAmount = parseFloat(minWithdrawal);
 
@@ -274,10 +275,12 @@ export default function Dashboard() {
                     className="bg-white text-emerald-700 hover:bg-emerald-50 font-bold text-base px-8 py-4 h-auto rounded-2xl shadow-lg disabled:opacity-100 disabled:text-gray-400">
                     <Wallet className="w-5 h-5 mr-2" /> Withdraw Now
                 </Button>
+                  {productConversionVisible && (
                   <Button onClick={handleConvertToProduct} disabled={availableBalance < minAmount}
                     className="bg-purple-500 text-white hover:bg-purple-600 font-bold text-base px-6 py-4 h-auto rounded-2xl shadow-lg disabled:opacity-100 disabled:text-white/40 disabled:bg-purple-500/50">
                     <ShoppingBag className="w-5 h-5 mr-2" /> Convert to Product Wallet
                   </Button>
+                  )}
                 </>
               )}
               <Button onClick={() => setShowHistory(!showHistory)} variant="ghost"
