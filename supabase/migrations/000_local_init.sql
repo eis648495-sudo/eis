@@ -119,6 +119,33 @@ create table if not exists public.gcash_receipts (
   created_at timestamptz default now()
 );
 
+-- ========== MAKE FK CONSTRAINTS DEFERRABLE ==========
+-- Allows bulk seed/sync scripts to insert rows in any order without FK violations.
+-- Each constraint is altered only if it exists (safe on re-runs and partial schemas).
+DO $$
+DECLARE
+  c text;
+  constraints text[] := ARRAY[
+    'members_referrer_id_fkey',
+    'members_placement_id_fkey',
+    'maintenance_codes_assigned_sub_admin_id_fkey',
+    'maintenance_codes_redeemed_by_sub_admin_id_fkey',
+    'maintenance_codes_used_by_member_id_fkey',
+    'transactions_member_id_fkey',
+    'transactions_from_member_id_fkey',
+    'conversion_requests_member_id_fkey',
+    'gcash_receipts_member_id_fkey'
+  ];
+BEGIN
+  FOREACH c IN ARRAY constraints LOOP
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = c) THEN
+      EXECUTE format('ALTER TABLE %I ALTER CONSTRAINT %I DEFERRABLE INITIALLY DEFERRED',
+        (SELECT relname FROM pg_constraint con JOIN pg_class cls ON con.conrelid = cls.oid WHERE con.conname = c),
+        c);
+    END IF;
+  END LOOP;
+END $$;
+
 -- ========== GRANTS FOR ANON ROLE ==========
 grant usage on schema public to anon;
 grant select, insert, update, delete on all tables in schema public to anon;
