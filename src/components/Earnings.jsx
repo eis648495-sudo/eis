@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Wallet, ArrowRight, TrendingUp, TrendingDown, Filter } from "lucide-react";
+import { Wallet, ArrowRight, TrendingUp, TrendingDown, Filter, ShoppingBag } from "lucide-react";
 import { useTable, useCurrentMember } from "../lib/useData";
 import { money, formatDate, TRANSACTION_TYPES } from "../lib/helpers";
 import { Button, Badge } from "./ui";
@@ -31,13 +31,17 @@ export default function Earnings() {
 
   const myTx = currentMember ? transactions.filter(t => t.member_id === currentMember.id) : [];
   const lastWithdrawal = myTx
-    .filter(t => t.type === "withdrawal" && t.status === "completed")
+    .filter(t => (t.type === "withdrawal" || t.type === "product_conversion") && t.status === "completed")
     .sort((a, b) => new Date(b.created_date || b.created_at) - new Date(a.created_date || a.created_at))[0];
   const lastWDate = lastWithdrawal ? new Date(lastWithdrawal.created_date || lastWithdrawal.created_at) : null;
 
   const availableBalance = myTx
     .filter(t => ["level_bonus", "referral_bonus", "adjustment"].includes(t.type) && (!lastWDate || new Date(t.created_date || t.created_at) > lastWDate))
     .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+  const productWalletBalance = myTx
+    .filter(t => t.type === "product_conversion" && t.status === "completed")
+    .reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0);
 
   const totalWithdrawn = myTx
     .filter(t => t.type === "withdrawal" && t.status === "completed")
@@ -60,18 +64,23 @@ export default function Earnings() {
       </motion.div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-6 text-white shadow-xl">
           <TrendingUp className="w-8 h-8 mb-3" />
           <p className="text-emerald-100 text-sm">Available Balance</p>
           <p className="text-4xl font-extrabold mt-1">{money(availableBalance)}</p>
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl p-6 text-white shadow-xl">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl p-6 text-white shadow-xl">
+          <ShoppingBag className="w-8 h-8 mb-3" />
+          <p className="text-purple-100 text-sm">Product Wallet</p>
+          <p className="text-4xl font-extrabold mt-1">{money(productWalletBalance)}</p>
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl p-6 text-white shadow-xl">
           <Wallet className="w-8 h-8 mb-3" />
           <p className="text-blue-100 text-sm">Total Withdrawn</p>
           <p className="text-4xl font-extrabold mt-1">{money(totalWithdrawn)}</p>
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-6 text-white shadow-xl">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-6 text-white shadow-xl">
           <TrendingDown className="w-8 h-8 mb-3" />
           <p className="text-amber-100 text-sm">Total Transactions</p>
           <p className="text-4xl font-extrabold mt-1">{myTx.length}</p>
@@ -91,6 +100,7 @@ export default function Earnings() {
               <option value="referral_bonus">Referral Bonus</option>
               <option value="adjustment">Maintenance Code</option>
               <option value="withdrawal">Withdrawal</option>
+              <option value="product_conversion">Product Wallet</option>
             </select>
           </div>
         </div>

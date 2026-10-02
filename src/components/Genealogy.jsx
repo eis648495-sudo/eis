@@ -64,13 +64,14 @@ export default function Genealogy() {
       )
     : [];
 
+  const maxDepth = isSuperAdmin ? Infinity : 5;
+
   const TreeNode = useCallback(function TreeNode({ member, level = 0 }) {
     const downlines = approvedMembers.filter(m => (m.placement_id || m.referrer_id) === member.id);
     const isRoot = level === 0;
     const status = maintenanceStatus(member, codes);
     const isActive = status.isGreen;
     const slots = `${downlines.length}/10`;
-    const treeLevel = member.tree_level || level;
     const canPlace = lobbyMembers.length > 0 && downlines.length < 10;
 
     return (
@@ -89,12 +90,13 @@ export default function Genealogy() {
 
           {/* Top row: avatar + username + level badge */}
           <div className="relative flex items-center gap-2 mb-2.5">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${isActive ? "from-white/30 to-white/10" : "from-white/20 to-white/5"} ring-2 ring-white/40`}>
-              <User className="w-4 h-4 text-white drop-shadow" />
-            </div>
-            <span className="font-bold text-sm truncate flex-1 text-center px-1 drop-shadow-sm">{member.username || member.full_name}</span>
-            <div className="w-6 h-6 rounded-lg bg-white/25 backdrop-blur-sm flex items-center justify-center flex-shrink-0 ring-1 ring-white/30">
-              <span className="text-[10px] font-bold text-white">L{treeLevel}</span>
+            <span className={`font-bold flex-1 text-center px-1 drop-shadow-sm break-words leading-tight ${
+              (member.username || member.full_name || "").length > 22 ? "text-[10px]" :
+              (member.username || member.full_name || "").length > 16 ? "text-[11px]" :
+              (member.username || member.full_name || "").length > 12 ? "text-xs" : "text-sm"
+            }`}>{member.username || member.full_name}</span>
+            <div className="min-w-8 h-8 px-1.5 rounded-lg bg-white/40 backdrop-blur-sm flex items-center justify-center flex-shrink-0 ring-2 ring-white/50 shadow-md">
+              <span className="text-xs font-extrabold text-white drop-shadow-md tracking-wide">{isRoot ? "You" : `L${level}`}</span>
             </div>
           </div>
 
@@ -140,7 +142,7 @@ export default function Genealogy() {
         </div>
 
         {/* Children with T-junction connectors */}
-        {downlines.length > 0 && (
+        {downlines.length > 0 && level < maxDepth && (
           <>
             {/* Vertical line from parent bottom to horizontal bar */}
             <div className="w-1 h-6 rounded-full bg-gradient-to-b from-emerald-400 to-blue-500" />
@@ -171,16 +173,23 @@ export default function Genealogy() {
             </div>
           </>
         )}
+
+        {/* Depth limit indicator — shown when downlines exist but are hidden */}
+        {downlines.length > 0 && level >= maxDepth && (
+          <div className="mt-2 text-xs text-gray-400 italic">
+            {downlines.length} more downline{downlines.length !== 1 ? "s" : ""} (visible to admins only)
+          </div>
+        )}
       </div>
     );
-  }, [approvedMembers, codes, setSelected, lobbyMembers, setPlacementTarget]);
+  }, [approvedMembers, codes, setSelected, lobbyMembers, setPlacementTarget, maxDepth]);
 
   async function handlePlaceMember(lobbyMember) {
     setPlacing(true);
     try {
       const treeLevel = (placementTarget.tree_level || 0) + 1;
       const { error: placeError } = await updateRecord("members", lobbyMember.id, {
-        referrer_id: placementTarget.id,
+        placement_id: placementTarget.id,
         status: "approved",
         tree_level: treeLevel,
         approved_date: new Date().toISOString(),
@@ -258,7 +267,7 @@ export default function Genealogy() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Mamlakah Tree</h1>
-            <p className="text-gray-500">5-level network — up to 10 downlines per member</p>
+            <p className="text-gray-500">{isSuperAdmin ? "Full network — up to 10 downlines per member" : "5-level network — up to 10 downlines per member"}</p>
           </div>
         </div>
       </motion.div>
@@ -330,7 +339,7 @@ export default function Genealogy() {
                   <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isActive ? "bg-green-500" : "bg-red-500"}`} />
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900 text-sm truncate">{m.username || m.full_name}</p>
-                    <p className="text-xs text-gray-400 truncate">L{m.tree_level || 0} · {m.direct_downlines_count || 0}/10</p>
+                    <p className="text-xs text-gray-400 truncate">{isSuperAdmin ? `L${m.tree_level || 0}` : (m.id === currentMember?.id ? "You" : `L${(m.tree_level || 0) - (currentMember?.tree_level || 0)}`)} · {m.direct_downlines_count || 0}/10</p>
                   </div>
                 </button>
               );
@@ -350,7 +359,7 @@ export default function Genealogy() {
               <span>Network tree — <strong className="text-gray-700">{selected?.username || selected?.full_name || "—"}</strong></span>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setZoom(z => Math.max(10, z - 10))} className="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center text-white shadow-lg hover:scale-110 active:scale-95 transition-all">
+              <button onClick={() => setZoom(z => z <= 10 ? Math.max(1, z - 1) : Math.max(1, z - 10))} className="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center text-white shadow-lg hover:scale-110 active:scale-95 transition-all">
                 <ZoomOut className="w-5 h-5" />
               </button>
               <span className="text-sm font-bold text-gray-700 w-14 text-center">{zoom}%</span>

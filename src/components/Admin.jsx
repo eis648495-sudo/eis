@@ -5,7 +5,7 @@ import {
   Eye, EyeOff, DollarSign, Trash2, RotateCcw, UserCog, GitBranch, Search,
   Download, Copy, Crown, ArrowRight, ChevronDown, X as XIcon, FileText,
   Key, Clock, Lock, Pencil, User, Save, Upload, Image as ImageIcon,
-  UserPlus, ArrowLeft,
+  UserPlus, ArrowLeft, ShoppingBag,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, updateRecord, createRecord, deleteRecord } from "../lib/useData";
@@ -37,7 +37,7 @@ export default function Admin() {
   const [minAmount, setMinAmount] = useState("300");
   const [savingMin, setSavingMin] = useState(false);
   const [txSearch, setTxSearch] = useState("");
-  const [tabVisibility, setTabVisibility] = useState({ monitoring: true, subadmin: true, terms: true, complan: true });
+  const [tabVisibility, setTabVisibility] = useState({ monitoring: true, subadmin: true, terms: true, complan: true, product_conversion: true });
   const [monitorMember, setMonitorMember] = useState(null);
   const [previewReceipt, setPreviewReceipt] = useState(null);
   const [signedUrls, setSignedUrls] = useState({});
@@ -64,6 +64,7 @@ export default function Admin() {
       subadmin: map.tab_subadmin_visible !== "false",
       terms: map.tab_terms_visible !== "false",
       complan: map.tab_complan_visible !== "false",
+      product_conversion: map.tab_product_conversion_visible !== "false",
     });
     const minSetting = settings.find(s => s.setting_key === "withdrawal_minimum_amount");
     if (minSetting) setMinAmount(minSetting.setting_value);
@@ -128,10 +129,11 @@ export default function Admin() {
 
   const tabs = [
     { id: "members", label: `Members (${activeMembers.length})`, icon: Users, active: "from-amber-500 to-orange-600", inactive: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
-    { id: "pending", label: `Pending Approvals${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ""}`, icon: Clock, active: "from-yellow-500 to-amber-600", inactive: "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100" },
+    { id: "pending", label: `Pending Placements${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ""}`, icon: Clock, active: "from-yellow-500 to-amber-600", inactive: "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100" },
     { id: "codes", label: "Codes", icon: Ticket, active: "from-teal-500 to-emerald-600", inactive: "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100" },
     { id: "withdrawals", label: `Withdrawals${pendingWithdrawals.length > 0 ? ` (${pendingWithdrawals.length})` : ""}`, icon: Wallet, active: "from-blue-500 to-indigo-600", inactive: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
     { id: "history", label: "Transaction History", icon: FileText, active: "from-violet-500 to-purple-600", inactive: "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100" },
+    ...(tabVisibility.product_conversion ? [{ id: "product_conversion", label: "Product Conversion", icon: ShoppingBag, active: "from-purple-500 to-fuchsia-600", inactive: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100" }] : []),
     { id: "genealogy", label: "Genealogy", icon: GitBranch, active: "from-pink-500 to-rose-600", inactive: "bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100" },
     ...(tabVisibility.monitoring ? [{ id: "monitoring", label: "Monitoring", icon: Eye, active: "from-cyan-500 to-sky-600", inactive: "bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100" }] : []),
     { id: "gcash", label: "GCash", icon: Smartphone, active: "from-indigo-500 to-blue-600", inactive: "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100" },
@@ -155,7 +157,7 @@ export default function Admin() {
   function getMemberBalance(memberId) {
     const txns = transactions.filter(t => t.member_id === memberId);
     const lastWithdrawal = txns
-      .filter(t => t.type === "withdrawal" && t.status === "completed")
+      .filter(t => (t.type === "withdrawal" || t.type === "product_conversion") && t.status === "completed")
       .sort((a, b) => new Date(b.created_date || b.created_at) - new Date(a.created_date || a.created_at))[0];
     const lastWDate = lastWithdrawal ? new Date(lastWithdrawal.created_date || lastWithdrawal.created_at) : null;
     return txns
@@ -504,6 +506,13 @@ export default function Admin() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <style>{`
+        .scroll-thick::-webkit-scrollbar { width: 42px !important; }
+        .scroll-thick::-webkit-scrollbar-track { background: #e5e7eb !important; border-radius: 21px; }
+        .scroll-thick::-webkit-scrollbar-thumb { background: #6b7280 !important; border-radius: 21px; border: 4px solid #e5e7eb; }
+        .scroll-thick::-webkit-scrollbar-thumb:hover { background: #4b5563 !important; }
+        .scroll-thick { scrollbar-width: thick !important; scrollbar-color: #6b7280 #e5e7eb !important; }
+      `}</style>
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
@@ -524,7 +533,7 @@ export default function Admin() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[
           { label: "Total Members", value: activeMembers.length, icon: Users, color: "from-amber-500 to-orange-600" },
-          { label: "Pending Approvals", value: pendingMembers.length, icon: Users, color: "from-yellow-500 to-amber-600" },
+          { label: "Pending Placements", value: pendingMembers.length, icon: Users, color: "from-yellow-500 to-amber-600" },
           { label: "Unused Codes", value: codes.filter(c => !c.is_used).length, icon: Ticket, color: "from-teal-500 to-emerald-600" },
           { label: "Pending Withdrawals", value: pendingWithdrawals.length, icon: Wallet, color: "from-blue-500 to-indigo-600" },
         ].map((s, i) => (
@@ -631,7 +640,7 @@ export default function Admin() {
                       Active Maintenance ({activeMaintenance.length})
                     </h3>
                   </div>
-                  <div className="p-2 max-h-[640px] overflow-y-auto">
+                  <div className="p-2 max-h-[640px] overflow-y-auto overscroll-contain touch-pan-y scroll-thick">
                     {activeMaintenance.length === 0 ? (
                       <p className="text-center py-8 text-gray-400">No active members</p>
                     ) : activeMaintenance.map((m, i) => renderRow(m, i))}
@@ -646,7 +655,7 @@ export default function Admin() {
                       Expired / No Maintenance ({expiredMaintenance.length})
                     </h3>
                   </div>
-                  <div className="p-2 max-h-[640px] overflow-y-auto">
+                  <div className="p-2 max-h-[640px] overflow-y-auto overscroll-contain touch-pan-y scroll-thick">
                     {expiredMaintenance.length === 0 ? (
                       <p className="text-center py-8 text-gray-400">No expired members</p>
                     ) : expiredMaintenance.map((m, i) => renderRow(m, i, true))}
@@ -668,17 +677,17 @@ export default function Admin() {
                   <Clock className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">Pending Approvals</h3>
-                  <p className="text-sm text-gray-500">Members awaiting approval.</p>
+                  <h3 className="text-lg font-bold text-gray-900">Pending Placements</h3>
+                  <p className="text-sm text-gray-500">Monitoring only — referrers place these members via their Lobby.</p>
                 </div>
               </div>
-              <Badge className="bg-amber-100 text-amber-700">{pendingMembers.length} pending</Badge>
+              <Badge className="bg-amber-100 text-amber-700">{pendingMembers.length} waiting</Badge>
             </div>
             <div className="p-4 space-y-3">
               {pendingMembers.length === 0 ? (
                 <div className="text-center py-12">
                   <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-400">No pending approvals.</p>
+                  <p className="text-gray-400">No pending placements.</p>
                 </div>
               ) : (
                 pendingMembers.map(m => {
@@ -688,6 +697,7 @@ export default function Admin() {
                       <div>
                         <p className="font-medium text-gray-900">{m.full_name} <span className="text-gray-400 text-sm">@{m.username}</span></p>
                         <p className="text-xs text-gray-500 mt-0.5">Referral: {m.referral_code || "—"} • Referred by: {members.find(r => r.id === m.referrer_id)?.username || "Direct"}</p>
+                        <p className="text-xs text-amber-600 font-medium mt-1">Waiting for @{members.find(r => r.id === m.referrer_id)?.username || "—"} to place via Lobby</p>
                       </div>
                       <div className="flex items-center gap-2">
                         {status.isGreen ? (
@@ -884,6 +894,97 @@ export default function Admin() {
               </table>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Product Conversion Tab */}
+      {tab === "product_conversion" && (
+        <div className="space-y-6">
+          {(() => {
+            const productConversions = transactions
+              .filter(t => t.type === "product_conversion")
+              .sort((a, b) => new Date(b.created_date || b.created_at) - new Date(a.created_date || a.created_at));
+            const totalConverted = productConversions
+              .filter(t => t.status === "completed")
+              .reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0);
+            const uniqueMembers = new Set(productConversions.map(t => t.member_id)).size;
+
+            return (
+              <>
+                {/* Summary cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-2xl shadow border border-gray-100 p-5">
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-fuchsia-600 rounded-xl flex items-center justify-center mb-3">
+                      <ShoppingBag className="w-5 h-5 text-white" />
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{productConversions.length}</p>
+                    <p className="text-sm text-gray-500">Total Conversions</p>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow border border-gray-100 p-5">
+                    <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center mb-3">
+                      <Wallet className="w-5 h-5 text-white" />
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{money(totalConverted)}</p>
+                    <p className="text-sm text-gray-500">Total Amount Converted</p>
+                  </div>
+                  <div className="bg-white rounded-2xl shadow border border-gray-100 p-5">
+                    <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center mb-3">
+                      <Users className="w-5 h-5 text-white" />
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{uniqueMembers}</p>
+                    <p className="text-sm text-gray-500">Members Who Converted</p>
+                  </div>
+                </div>
+
+                {/* Conversion list */}
+                <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+                  <div className="p-5 border-b border-gray-100 bg-purple-50 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                        <ShoppingBag className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">Product Wallet Conversions</h3>
+                        <p className="text-sm text-gray-500">Members who converted their balance to Product Wallet.</p>
+                      </div>
+                    </div>
+                    <Badge className="bg-purple-100 text-purple-700">{productConversions.length} total</Badge>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-100">
+                          {["Member", "Amount", "Status", "Description", "Date"].map(h => (
+                            <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {productConversions.length === 0 ? (
+                          <tr><td colSpan="5" className="text-center py-12 text-gray-400">No product conversions yet</td></tr>
+                        ) : productConversions.map(t => {
+                          const member = members.find(m => m.id === t.member_id);
+                          return (
+                            <tr key={t.id} className="border-b border-gray-50 hover:bg-gray-50">
+                              <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
+                                {member?.full_name || "—"} <span className="text-gray-400 text-xs">@{member?.username || ""}</span>
+                              </td>
+                              <td className="px-6 py-4 text-sm font-bold text-purple-600 whitespace-nowrap">{money(Math.abs(t.amount || 0))}</td>
+                              <td className="px-6 py-4">
+                                <Badge className={t.status === "completed" ? "bg-green-100 text-green-700" : t.status === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}>{t.status}</Badge>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-600">{t.description || "—"}</td>
+                              <td className="px-6 py-4 text-sm text-gray-400 whitespace-nowrap">{formatDate(t.created_date || t.created_at, "MMM d, yyyy")}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 
@@ -1237,6 +1338,7 @@ export default function Admin() {
               {[
                 ...(canManageTabs ? [{ key: "monitoring", label: "Downline Monitoring" }] : []),
                 ...(canManageTabs ? [{ key: "subadmin", label: "Sub-Admins" }] : []),
+                ...(canManageTabs ? [{ key: "product_conversion", label: "Product Conversion" }] : []),
                 { key: "terms", label: "Terms & Conditions" },
                 { key: "complan", label: "Mamlakah ComPlan" },
               ].map(t => (

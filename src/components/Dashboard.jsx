@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wallet, ArrowRight, KeyRound, ChevronDown, ChevronUp, Ticket, Clock, AlertCircle, Share2, Check, FileText, Users } from "lucide-react";
+import { Wallet, ArrowRight, KeyRound, ChevronDown, ChevronUp, Ticket, Clock, AlertCircle, Share2, Check, FileText, Users, ShoppingBag } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, useCurrentMember, createRecord } from "../lib/useData";
 import { supabase } from "../lib/supabase";
@@ -27,13 +27,17 @@ export default function Dashboard() {
 
   const myTx = currentMember ? transactions.filter(t => t.member_id === currentMember.id) : [];
   const lastWithdrawal = myTx
-    .filter(t => t.type === "withdrawal" && t.status === "completed")
+    .filter(t => (t.type === "withdrawal" || t.type === "product_conversion") && t.status === "completed")
     .sort((a, b) => new Date(b.created_date || b.created_at) - new Date(a.created_date || a.created_at))[0];
   const lastWDate = lastWithdrawal ? new Date(lastWithdrawal.created_date || lastWithdrawal.created_at) : null;
 
   const availableBalance = myTx
     .filter(t => ["level_bonus", "referral_bonus", "adjustment"].includes(t.type) && (!lastWDate || new Date(t.created_date || t.created_at) > lastWDate))
     .reduce((sum, t) => sum + Number(t.amount || 0), 0);
+
+  const productWalletBalance = myTx
+    .filter(t => t.type === "product_conversion" && t.status === "completed")
+    .reduce((sum, t) => sum + Math.abs(Number(t.amount || 0)), 0);
 
   const pendingWithdrawal = conversionReqs.find(r => r.member_id === currentMember?.id && r.status === "pending");
   const withdrawals = myTx.filter(t => t.type === "withdrawal").sort((a, b) => new Date(b.created_date || b.created_at) - new Date(a.created_date || a.created_at));
@@ -60,6 +64,27 @@ export default function Dashboard() {
       window.location.reload();
     } catch (err) {
       toast.error("Failed to submit withdrawal request");
+    }
+  }
+
+  async function handleConvertToProduct() {
+    if (availableBalance < minAmount) {
+      toast.error(`You need at least ₱${minAmount.toLocaleString()} to convert.`);
+      return;
+    }
+    if (!window.confirm(`Convert ${money(availableBalance)} to your Product Wallet? This is instant and cannot be undone.`)) return;
+    try {
+      await createRecord("transactions", {
+        member_id: currentMember.id,
+        type: "product_conversion",
+        amount: -availableBalance,
+        status: "completed",
+        description: "Converted to Product Wallet",
+      });
+      toast.success("Balance converted to Product Wallet!");
+      window.location.reload();
+    } catch (err) {
+      toast.error("Failed to convert balance");
     }
   }
 
@@ -229,16 +254,31 @@ export default function Dashboard() {
                 <p className="font-bold text-yellow-200">You will receive: ₱{(availableBalance - charge).toLocaleString()}</p>
               </div>
             )}
+            {productWalletBalance > 0 && (
+              <div className="mt-5 bg-purple-500/30 rounded-2xl px-4 py-3 flex items-center gap-3 text-sm text-white">
+                <ShoppingBag className="w-5 h-5 shrink-0" />
+                <div>
+                  <p className="text-purple-100 text-xs">Product Wallet Balance</p>
+                  <p className="font-bold text-lg">{money(productWalletBalance)}</p>
+                </div>
+              </div>
+            )}
             <div className="mt-5 flex flex-wrap gap-3">
               {pendingWithdrawal ? (
                 <div className="bg-white/20 rounded-2xl px-5 py-3 flex items-center gap-2 text-white text-sm font-semibold">
                   <Clock className="w-4 h-4" /> Withdrawal pending admin approval
                 </div>
               ) : (
-                <Button onClick={handleWithdraw} disabled={availableBalance < minAmount || !profileComplete}
-                  className="bg-white text-emerald-700 hover:bg-emerald-50 font-bold text-base px-8 py-4 h-auto rounded-2xl shadow-lg disabled:opacity-100 disabled:text-gray-400">
-                  <Wallet className="w-5 h-5 mr-2" /> Withdraw Now
+                <>
+                  <Button onClick={handleWithdraw} disabled={availableBalance < minAmount || !profileComplete}
+                    className="bg-white text-emerald-700 hover:bg-emerald-50 font-bold text-base px-8 py-4 h-auto rounded-2xl shadow-lg disabled:opacity-100 disabled:text-gray-400">
+                    <Wallet className="w-5 h-5 mr-2" /> Withdraw Now
                 </Button>
+                  <Button onClick={handleConvertToProduct} disabled={availableBalance < minAmount}
+                    className="bg-purple-500 text-white hover:bg-purple-600 font-bold text-base px-6 py-4 h-auto rounded-2xl shadow-lg disabled:opacity-100 disabled:text-white/40 disabled:bg-purple-500/50">
+                    <ShoppingBag className="w-5 h-5 mr-2" /> Convert to Product Wallet
+                  </Button>
+                </>
               )}
               <Button onClick={() => setShowHistory(!showHistory)} variant="ghost"
                 className="bg-white/20 hover:bg-white/30 text-white border border-white/30 rounded-2xl">
