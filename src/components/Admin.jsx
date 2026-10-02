@@ -572,7 +572,7 @@ export default function Admin() {
             const renderRow = (m, index, isExpired = false) => {
               const status = maintenanceStatus(m, codes);
               return (
-                <div key={m.id} className="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 px-2 hover:bg-gray-50 rounded-xl transition-colors">
+                <div key={m.id} className="flex items-center gap-3 py-3 border-b border-gray-200 last:border-0 px-2 hover:bg-gray-50 rounded-xl transition-colors">
                   {/* Index badge */}
                   <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">{index + 1}</div>
                   {/* User info */}
