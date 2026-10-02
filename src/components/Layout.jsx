@@ -82,8 +82,8 @@ export default function Layout({ children, currentPageName }) {
           <img src={LOGO_URL} alt="Mamlakah" className="w-10 h-10 rounded-xl object-cover" />
           <span className="font-bold text-xl text-gray-900">Mamlakah</span>
         </div>
-        <button onClick={() => setMobileOpen(true)} className="p-2 rounded-lg hover:bg-gray-100">
-          <Menu className="w-6 h-6 text-gray-700" />
+        <button onClick={() => setMobileOpen(true)} className="p-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 shadow-lg active:scale-95 transition-all">
+          <Menu className="w-8 h-8 text-white" />
         </button>
       </div>
 
