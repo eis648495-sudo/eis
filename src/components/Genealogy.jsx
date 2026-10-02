@@ -93,7 +93,11 @@ export default function Genealogy() {
             <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${isActive ? "from-white/30 to-white/10" : "from-white/20 to-white/5"} ring-2 ring-white/40`}>
               <User className="w-4 h-4 text-white drop-shadow" />
             </div>
-            <span className="font-bold text-sm truncate flex-1 text-center px-1 drop-shadow-sm">{member.username || member.full_name}</span>
+            <span className={`font-bold flex-1 text-center px-1 drop-shadow-sm break-words leading-tight ${
+              (member.username || member.full_name || "").length > 20 ? "text-[9px]" :
+              (member.username || member.full_name || "").length > 14 ? "text-[10px]" :
+              (member.username || member.full_name || "").length > 10 ? "text-[11px]" : "text-sm"
+            }`}>{member.username || member.full_name}</span>
             <div className="w-6 h-6 rounded-lg bg-white/25 backdrop-blur-sm flex items-center justify-center flex-shrink-0 ring-1 ring-white/30">
               <span className="text-[10px] font-bold text-white">{isRoot ? "You" : `L${level}`}</span>
             </div>
