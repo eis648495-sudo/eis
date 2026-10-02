@@ -99,39 +99,44 @@ export function GCashButton() {
   }
 
   const onPointerDown = (e) => {
+    e.preventDefault();
     dragging.current = true;
     moved.current = false;
     dragStart.current = { x: e.clientX, y: e.clientY };
     posStart.current = { ...pos };
-    e.currentTarget.setPointerCapture(e.pointerId);
   };
 
-  const onPointerMove = (e) => {
-    if (!dragging.current || !posStart.current) return;
-    const dx = e.clientX - dragStart.current.x;
-    const dy = e.clientY - dragStart.current.y;
-    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved.current = true;
-    const btn = btnRef.current;
-    const bw = btn?.offsetWidth || 140;
-    const bh = btn?.offsetHeight || 48;
-    const nx = Math.max(8, Math.min(window.innerWidth - bw - 8, posStart.current.x + dx));
-    const ny = Math.max(8, Math.min(window.innerHeight - bh - 8, posStart.current.y + dy));
-    setPos({ x: nx, y: ny });
-  };
-
-  const onPointerUp = (e) => {
-    dragging.current = false;
-    e.currentTarget.releasePointerCapture(e.pointerId);
-    if (!moved.current) setOpen(o => !o);
-  };
+  useEffect(() => {
+    function handleMove(e) {
+      if (!dragging.current || !posStart.current) return;
+      const dx = e.clientX - dragStart.current.x;
+      const dy = e.clientY - dragStart.current.y;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved.current = true;
+      const btn = btnRef.current;
+      const bw = btn?.offsetWidth || 140;
+      const bh = btn?.offsetHeight || 48;
+      const nx = Math.max(8, Math.min(window.innerWidth - bw - 8, posStart.current.x + dx));
+      const ny = Math.max(8, Math.min(window.innerHeight - bh - 8, posStart.current.y + dy));
+      setPos({ x: nx, y: ny });
+    }
+    function handleUp() {
+      if (!dragging.current) return;
+      dragging.current = false;
+      if (!moved.current) setOpen(o => !o);
+    }
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+  }, []);
 
   return (
     <>
       <button
         ref={btnRef}
         onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
         style={pos ? { left: pos.x, top: pos.y, right: "auto", bottom: "auto" } : undefined}
         className="fixed z-50 h-12 lg:h-14 pl-4 pr-5 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg lg:shadow-xl flex items-center gap-2 touch-none select-none cursor-grab active:cursor-grabbing"
         title="GCash Payment — drag to move"
