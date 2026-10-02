@@ -89,6 +89,7 @@ export const TRANSACTION_TYPES = {
   referral_bonus: { label: "Referral Bonus", color: "bg-blue-100 text-blue-700" },
   adjustment: { label: "Maintenance Code", color: "bg-teal-100 text-teal-700" },
   withdrawal: { label: "Withdrawal", color: "bg-red-100 text-red-700" },
+  product_conversion: { label: "Product Wallet", color: "bg-purple-100 text-purple-700" },
 };
 
 export function generateReferralCode() {

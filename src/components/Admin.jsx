@@ -155,7 +155,7 @@ export default function Admin() {
   function getMemberBalance(memberId) {
     const txns = transactions.filter(t => t.member_id === memberId);
     const lastWithdrawal = txns
-      .filter(t => t.type === "withdrawal" && t.status === "completed")
+      .filter(t => (t.type === "withdrawal" || t.type === "product_conversion") && t.status === "completed")
       .sort((a, b) => new Date(b.created_date || b.created_at) - new Date(a.created_date || a.created_at))[0];
     const lastWDate = lastWithdrawal ? new Date(lastWithdrawal.created_date || lastWithdrawal.created_at) : null;
     return txns
