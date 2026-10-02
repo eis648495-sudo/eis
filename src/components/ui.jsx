@@ -24,7 +24,7 @@ export function Button({ children, variant = "default", size = "default", classN
 export function Input({ className = "", ...props }) {
   return (
     <input
-      className={`w-full h-12 rounded-xl border border-gray-900 px-4 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all ${className}`}
+      className={`w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all ${className}`}
       {...props}
     />
   );
