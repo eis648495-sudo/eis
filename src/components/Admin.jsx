@@ -631,7 +631,7 @@ export default function Admin() {
                       Active Maintenance ({activeMaintenance.length})
                     </h3>
                   </div>
-                  <div className="p-2 max-h-[640px] overflow-y-auto overscroll-contain touch-pan-y">
+                  <div className="p-2 max-h-[640px] overflow-y-auto overscroll-contain touch-pan-y scroll-thick">
                     {activeMaintenance.length === 0 ? (
                       <p className="text-center py-8 text-gray-400">No active members</p>
                     ) : activeMaintenance.map((m, i) => renderRow(m, i))}
@@ -646,7 +646,7 @@ export default function Admin() {
                       Expired / No Maintenance ({expiredMaintenance.length})
                     </h3>
                   </div>
-                  <div className="p-2 max-h-[640px] overflow-y-auto overscroll-contain touch-pan-y">
+                  <div className="p-2 max-h-[640px] overflow-y-auto overscroll-contain touch-pan-y scroll-thick">
                     {expiredMaintenance.length === 0 ? (
                       <p className="text-center py-8 text-gray-400">No expired members</p>
                     ) : expiredMaintenance.map((m, i) => renderRow(m, i, true))}
