@@ -22,21 +22,21 @@ body {
 
 /* Thicker scrollbar for easier use on touch and mouse */
 .scroll-thick::-webkit-scrollbar {
-  width: 14px;
+  width: 42px;
 }
 .scroll-thick::-webkit-scrollbar-track {
   background: #f3f4f6;
-  border-radius: 7px;
+  border-radius: 21px;
 }
 .scroll-thick::-webkit-scrollbar-thumb {
   background: #9ca3af;
-  border-radius: 7px;
-  border: 3px solid #f3f4f6;
+  border-radius: 21px;
+  border: 9px solid #f3f4f6;
 }
 .scroll-thick::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
 }
 .scroll-thick {
-  scrollbar-width: auto;
+  scrollbar-width: thick;
   scrollbar-color: #9ca3af #f3f4f6;
 }
