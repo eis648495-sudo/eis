@@ -290,7 +290,7 @@ export default function Dashboard() {
               ) : (
                 <>
                   <Button onClick={handleWithdraw} disabled={withdrawValue < minAmount || withdrawValue > availableBalance || !profileComplete}
-                    className="bg-white text-emerald-700 hover:bg-emerald-50 font-bold text-base px-8 py-4 h-auto rounded-2xl shadow-lg disabled:opacity-100 disabled:text-gray-400">
+                    className="bg-white text-emerald-700 hover:bg-emerald-50 font-bold text-base px-8 py-4 h-auto rounded-2xl shadow-lg disabled:opacity-100 disabled:text-gray-600">
                     <Wallet className="w-5 h-5 mr-2" /> Withdraw Now
                 </Button>
                   {productConversionVisible && (
