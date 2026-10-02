@@ -35,6 +35,33 @@ export function GCashButton() {
     setPopupAbove(pos.y > window.innerHeight * 0.5);
   }, [open, pos]);
 
+  // Window-level drag listeners (must be before any early return to respect Rules of Hooks)
+  useEffect(() => {
+    function handleMove(e) {
+      if (!dragging.current || !posStart.current) return;
+      const dx = e.clientX - dragStart.current.x;
+      const dy = e.clientY - dragStart.current.y;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved.current = true;
+      const btn = btnRef.current;
+      const bw = btn?.offsetWidth || 140;
+      const bh = btn?.offsetHeight || 48;
+      const nx = Math.max(8, Math.min(window.innerWidth - bw - 8, posStart.current.x + dx));
+      const ny = Math.max(8, Math.min(window.innerHeight - bh - 8, posStart.current.y + dy));
+      setPos({ x: nx, y: ny });
+    }
+    function handleUp() {
+      if (!dragging.current) return;
+      dragging.current = false;
+      if (!moved.current) setOpen(o => !o);
+    }
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+  }, []);
+
   if (!memberId || !active) return null;
 
   function copyNumber() {
@@ -105,32 +132,6 @@ export function GCashButton() {
     dragStart.current = { x: e.clientX, y: e.clientY };
     posStart.current = { ...pos };
   };
-
-  useEffect(() => {
-    function handleMove(e) {
-      if (!dragging.current || !posStart.current) return;
-      const dx = e.clientX - dragStart.current.x;
-      const dy = e.clientY - dragStart.current.y;
-      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved.current = true;
-      const btn = btnRef.current;
-      const bw = btn?.offsetWidth || 140;
-      const bh = btn?.offsetHeight || 48;
-      const nx = Math.max(8, Math.min(window.innerWidth - bw - 8, posStart.current.x + dx));
-      const ny = Math.max(8, Math.min(window.innerHeight - bh - 8, posStart.current.y + dy));
-      setPos({ x: nx, y: ny });
-    }
-    function handleUp() {
-      if (!dragging.current) return;
-      dragging.current = false;
-      if (!moved.current) setOpen(o => !o);
-    }
-    window.addEventListener("pointermove", handleMove);
-    window.addEventListener("pointerup", handleUp);
-    return () => {
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", handleUp);
-    };
-  }, []);
 
   return (
     <>
