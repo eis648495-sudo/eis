@@ -98,8 +98,8 @@ export default function Genealogy() {
               (member.username || member.full_name || "").length > 14 ? "text-[10px]" :
               (member.username || member.full_name || "").length > 10 ? "text-[11px]" : "text-sm"
             }`}>{member.username || member.full_name}</span>
-            <div className="w-6 h-6 rounded-lg bg-white/25 backdrop-blur-sm flex items-center justify-center flex-shrink-0 ring-1 ring-white/30">
-              <span className="text-[10px] font-bold text-white">{isRoot ? "You" : `L${level}`}</span>
+            <div className="min-w-8 h-8 px-1.5 rounded-lg bg-white/40 backdrop-blur-sm flex items-center justify-center flex-shrink-0 ring-2 ring-white/50 shadow-md">
+              <span className="text-xs font-extrabold text-white drop-shadow-md tracking-wide">{isRoot ? "You" : `L${level}`}</span>
             </div>
           </div>
 
