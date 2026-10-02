@@ -90,13 +90,10 @@ export default function Genealogy() {
 
           {/* Top row: avatar + username + level badge */}
           <div className="relative flex items-center gap-2 mb-2.5">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gradient-to-br ${isActive ? "from-white/30 to-white/10" : "from-white/20 to-white/5"} ring-2 ring-white/40`}>
-              <User className="w-4 h-4 text-white drop-shadow" />
-            </div>
             <span className={`font-bold flex-1 text-center px-1 drop-shadow-sm break-words leading-tight ${
-              (member.username || member.full_name || "").length > 20 ? "text-[9px]" :
-              (member.username || member.full_name || "").length > 14 ? "text-[10px]" :
-              (member.username || member.full_name || "").length > 10 ? "text-[11px]" : "text-sm"
+              (member.username || member.full_name || "").length > 22 ? "text-[10px]" :
+              (member.username || member.full_name || "").length > 16 ? "text-[11px]" :
+              (member.username || member.full_name || "").length > 12 ? "text-xs" : "text-sm"
             }`}>{member.username || member.full_name}</span>
             <div className="min-w-8 h-8 px-1.5 rounded-lg bg-white/40 backdrop-blur-sm flex items-center justify-center flex-shrink-0 ring-2 ring-white/50 shadow-md">
               <span className="text-xs font-extrabold text-white drop-shadow-md tracking-wide">{isRoot ? "You" : `L${level}`}</span>
