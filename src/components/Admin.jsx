@@ -504,6 +504,13 @@ export default function Admin() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <style>{`
+        .scroll-thick::-webkit-scrollbar { width: 42px !important; }
+        .scroll-thick::-webkit-scrollbar-track { background: #e5e7eb !important; border-radius: 21px; }
+        .scroll-thick::-webkit-scrollbar-thumb { background: #6b7280 !important; border-radius: 21px; border: 4px solid #e5e7eb; }
+        .scroll-thick::-webkit-scrollbar-thumb:hover { background: #4b5563 !important; }
+        .scroll-thick { scrollbar-width: thick !important; scrollbar-color: #6b7280 #e5e7eb !important; }
+      `}</style>
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
