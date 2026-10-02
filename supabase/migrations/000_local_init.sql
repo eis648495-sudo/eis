@@ -19,6 +19,7 @@ create table if not exists public.members (
   full_name text default '',
   referral_code text,
   referrer_id uuid references public.members(id),
+  placement_id uuid references public.members(id) on delete set null,
   status text default 'pending',
   role text default 'member',
   tree_level int default 0,
@@ -33,11 +34,19 @@ create table if not exists public.members (
   approved_date timestamptz,
   created_date timestamptz default now(),
   created_at timestamptz default now(),
+  updated_at timestamptz default now(),
   direct_downlines_count int default 0,
   maintenance_override text,
   maintenance_timer_seconds int default 0,
-  maintenance_timer_set_at timestamptz
+  maintenance_timer_set_at timestamptz,
+  available_balance numeric default 0,
+  total_earnings numeric default 0,
+  level1_count int default 0,
+  level2_count int default 0,
+  level3_count int default 0
 );
+
+create index if not exists idx_members_placement on public.members(placement_id);
 
 -- ========== MAINTENANCE CODES ==========
 create table if not exists public.maintenance_codes (
@@ -48,6 +57,7 @@ create table if not exists public.maintenance_codes (
   description text,
   assigned_username text,
   assigned_sub_admin_id uuid references public.members(id),
+  redeemed_by_sub_admin_id uuid references public.members(id),
   used_by_member_id uuid references public.members(id),
   used_at timestamptz,
   created_at timestamptz default now()
@@ -73,8 +83,10 @@ create table if not exists public.conversion_requests (
   member_id uuid references public.members(id),
   amount numeric default 0,
   status text default 'pending',
+  admin_note text,
   created_date timestamptz default now(),
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 -- ========== GCASH INFO ==========
@@ -83,7 +95,8 @@ create table if not exists public.gcash_info (
   gcash_number text,
   gcash_name text,
   is_active boolean default true,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 -- ========== SYSTEM SETTINGS ==========
@@ -91,7 +104,9 @@ create table if not exists public.system_settings (
   id uuid primary key default gen_random_uuid(),
   setting_key text unique,
   setting_value text,
-  created_at timestamptz default now()
+  description text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 -- ========== GCASH RECEIPTS ==========
@@ -103,6 +118,33 @@ create table if not exists public.gcash_receipts (
   status text default 'pending',
   created_at timestamptz default now()
 );
+
+-- ========== MAKE FK CONSTRAINTS DEFERRABLE ==========
+-- Allows bulk seed/sync scripts to insert rows in any order without FK violations.
+-- Each constraint is altered only if it exists (safe on re-runs and partial schemas).
+DO $$
+DECLARE
+  c text;
+  constraints text[] := ARRAY[
+    'members_referrer_id_fkey',
+    'members_placement_id_fkey',
+    'maintenance_codes_assigned_sub_admin_id_fkey',
+    'maintenance_codes_redeemed_by_sub_admin_id_fkey',
+    'maintenance_codes_used_by_member_id_fkey',
+    'transactions_member_id_fkey',
+    'transactions_from_member_id_fkey',
+    'conversion_requests_member_id_fkey',
+    'gcash_receipts_member_id_fkey'
+  ];
+BEGIN
+  FOREACH c IN ARRAY constraints LOOP
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = c) THEN
+      EXECUTE format('ALTER TABLE %I ALTER CONSTRAINT %I DEFERRABLE INITIALLY DEFERRED',
+        (SELECT relname FROM pg_constraint con JOIN pg_class cls ON con.conrelid = cls.oid WHERE con.conname = c),
+        c);
+    END IF;
+  END LOOP;
+END $$;
 
 -- ========== GRANTS FOR ANON ROLE ==========
 grant usage on schema public to anon;

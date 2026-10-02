@@ -18,7 +18,7 @@ export default function Genealogy() {
   const [placementTarget, setPlacementTarget] = useState(null);
   const [placing, setPlacing] = useState(false);
   const [, setTick] = useState(0);
-  const { data: members = [], isLoading } = useTable("members");
+  const { data: members = [], isLoading, refetch: refetchMembers } = useTable("members");
   const { data: codes = [] } = useTable("maintenance_codes");
   const { currentMember } = useCurrentMember(members);
 
@@ -32,8 +32,8 @@ export default function Genealogy() {
     if (currentMember && !selected) setSelected(currentMember);
   }, [currentMember]);
 
-  const allApproved = members.filter(m => m.status === "approved");
-  const lobbyMembers = members.filter(m => m.status === "pending" && m.referrer_id === currentMember?.id);
+  const allApproved = useMemo(() => members.filter(m => m.status === "approved"), [members]);
+  const lobbyMembers = useMemo(() => members.filter(m => m.status === "pending" && m.referrer_id === currentMember?.id), [members, currentMember?.id]);
   const isSuperAdmin = currentMember?.username === "supadmin" || currentMember?.username === "admin";
 
   // Non-super-admin viewers only see their own downline tree — supadmin, admin,
@@ -51,9 +51,9 @@ export default function Genealogy() {
     return ids;
   }, [isSuperAdmin, currentMember, allApproved]);
 
-  const approvedMembers = visibleIds
+  const approvedMembers = useMemo(() => visibleIds
     ? allApproved.filter(m => visibleIds.has(m.id))
-    : allApproved;
+    : allApproved, [allApproved, visibleIds]);
 
   const searchResults = search
     ? approvedMembers.filter(m =>
@@ -195,7 +195,9 @@ export default function Genealogy() {
         approved_date: new Date().toISOString(),
       });
       if (placeError) {
-        toast.error(placeError.message || "Failed to place member");
+        toast.error(placeError.message?.includes("placement_id")
+          ? "Placement is not configured in this database. Apply migration 005_genealogy_placement.sql in Supabase, then try again."
+          : placeError.message || "Failed to place member");
         setPlacing(false);
         return;
       }
@@ -205,7 +207,7 @@ export default function Genealogy() {
       if (countError) console.error("Failed to update downline count:", countError.message);
       toast.success(`${lobbyMember.username} placed under ${placementTarget.username}`);
       setPlacementTarget(null);
-      window.location.reload();
+      await refetchMembers();
     } catch (err) {
       toast.error(err.message || "Failed to place member");
     }
@@ -238,6 +240,8 @@ export default function Genealogy() {
   }
 
   const handlePointerDown = (e) => {
+    // Keep button presses out of canvas panning: capture redirects their click.
+    if (e.button !== 0 || e.target.closest("button, a, input, select, textarea")) return;
     setIsDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY };
     panStart.current = { ...pan };
@@ -253,7 +257,9 @@ export default function Genealogy() {
 
   const handlePointerUp = (e) => {
     setIsDragging(false);
-    e.currentTarget.releasePointerCapture(e.pointerId);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
   };
 
   const resetView = () => { setPan({ x: 0, y: 0 }); setZoom(100); };
@@ -374,6 +380,7 @@ export default function Genealogy() {
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
             onPointerLeave={handlePointerUp}
           >
             <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom / 100})`, transformOrigin: 'top center', transition: isDragging ? 'none' : 'transform 0.2s' }}>
