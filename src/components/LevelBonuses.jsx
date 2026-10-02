@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Layers, ArrowRight, HelpCircle, Wallet } from "lucide-react";
+import { Layers, ArrowRight, HelpCircle } from "lucide-react";
 import { useTable, useCurrentMember } from "../lib/useData";
 import { LEVEL_CONFIG, money } from "../lib/helpers";
 import { Button } from "./ui";
@@ -12,13 +12,6 @@ export default function LevelBonuses() {
   const { currentMember } = useCurrentMember(members);
 
   const totalMax = LEVEL_CONFIG.reduce((sum, l) => sum + l.bonus_amount * l.max_members, 0);
-
-  const myTx = currentMember ? transactions.filter(t => t.member_id === currentMember.id) : [];
-  const levelIncome = {};
-  for (let i = 1; i <= 5; i++) {
-    levelIncome[i] = myTx.filter(t => t.type === "level_bonus" && t.bonus_level === i).reduce((sum, t) => sum + Number(t.amount || 0), 0);
-  }
-  const totalIncome = levelIncome[1] + levelIncome[2] + levelIncome[3] + levelIncome[4] + levelIncome[5];
 
   if (!currentMember) {
     return (
@@ -67,27 +60,6 @@ export default function LevelBonuses() {
           <li className="flex gap-3"><span className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">3</span> Each upline within 5 levels receives their corresponding bonus instantly.</li>
         </ol>
       </motion.div>
-
-      {/* My income per level */}
-      {currentMember && (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-          className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 mb-8">
-          <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Wallet className="w-5 h-5 text-emerald-500" /> My Total Income Per Level</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {LEVEL_CONFIG.map(l => (
-              <div key={l.level} className={`${l.bgColor} border ${l.borderColor} rounded-2xl p-4 text-center`}>
-                <div className={`w-10 h-10 bg-gradient-to-br ${l.color} rounded-xl flex items-center justify-center text-white font-extrabold text-lg mx-auto mb-2`}>L{l.level}</div>
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Level {l.level} Income</p>
-                <p className={`text-2xl font-extrabold ${l.textColor}`}>{money(levelIncome[l.level])}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-            <span className="font-bold text-gray-900">Total Income</span>
-            <span className="text-2xl font-extrabold text-gray-900">{money(totalIncome)}</span>
-          </div>
-        </motion.div>
-      )}
 
       {/* Level details */}
       <div className="space-y-4">
