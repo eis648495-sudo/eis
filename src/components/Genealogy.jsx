@@ -189,7 +189,7 @@ export default function Genealogy() {
     try {
       const treeLevel = (placementTarget.tree_level || 0) + 1;
       const { error: placeError } = await updateRecord("members", lobbyMember.id, {
-        referrer_id: placementTarget.id,
+        placement_id: placementTarget.id,
         status: "approved",
         tree_level: treeLevel,
         approved_date: new Date().toISOString(),
