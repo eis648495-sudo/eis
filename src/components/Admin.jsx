@@ -129,7 +129,7 @@ export default function Admin() {
 
   const tabs = [
     { id: "members", label: `Members (${activeMembers.length})`, icon: Users, active: "from-amber-500 to-orange-600", inactive: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
-    { id: "pending", label: `Pending Approvals${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ""}`, icon: Clock, active: "from-yellow-500 to-amber-600", inactive: "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100" },
+    { id: "pending", label: `Pending Placements${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ""}`, icon: Clock, active: "from-yellow-500 to-amber-600", inactive: "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100" },
     { id: "codes", label: "Codes", icon: Ticket, active: "from-teal-500 to-emerald-600", inactive: "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100" },
     { id: "withdrawals", label: `Withdrawals${pendingWithdrawals.length > 0 ? ` (${pendingWithdrawals.length})` : ""}`, icon: Wallet, active: "from-blue-500 to-indigo-600", inactive: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
     { id: "history", label: "Transaction History", icon: FileText, active: "from-violet-500 to-purple-600", inactive: "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100" },
@@ -533,7 +533,7 @@ export default function Admin() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         {[
           { label: "Total Members", value: activeMembers.length, icon: Users, color: "from-amber-500 to-orange-600" },
-          { label: "Pending Approvals", value: pendingMembers.length, icon: Users, color: "from-yellow-500 to-amber-600" },
+          { label: "Pending Placements", value: pendingMembers.length, icon: Users, color: "from-yellow-500 to-amber-600" },
           { label: "Unused Codes", value: codes.filter(c => !c.is_used).length, icon: Ticket, color: "from-teal-500 to-emerald-600" },
           { label: "Pending Withdrawals", value: pendingWithdrawals.length, icon: Wallet, color: "from-blue-500 to-indigo-600" },
         ].map((s, i) => (
@@ -677,17 +677,17 @@ export default function Admin() {
                   <Clock className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">Pending Approvals</h3>
-                  <p className="text-sm text-gray-500">Members awaiting approval.</p>
+                  <h3 className="text-lg font-bold text-gray-900">Pending Placements</h3>
+                  <p className="text-sm text-gray-500">Monitoring only — referrers place these members via their Lobby.</p>
                 </div>
               </div>
-              <Badge className="bg-amber-100 text-amber-700">{pendingMembers.length} pending</Badge>
+              <Badge className="bg-amber-100 text-amber-700">{pendingMembers.length} waiting</Badge>
             </div>
             <div className="p-4 space-y-3">
               {pendingMembers.length === 0 ? (
                 <div className="text-center py-12">
                   <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-400">No pending approvals.</p>
+                  <p className="text-gray-400">No pending placements.</p>
                 </div>
               ) : (
                 pendingMembers.map(m => {
@@ -697,6 +697,7 @@ export default function Admin() {
                       <div>
                         <p className="font-medium text-gray-900">{m.full_name} <span className="text-gray-400 text-sm">@{m.username}</span></p>
                         <p className="text-xs text-gray-500 mt-0.5">Referral: {m.referral_code || "—"} • Referred by: {members.find(r => r.id === m.referrer_id)?.username || "Direct"}</p>
+                        <p className="text-xs text-amber-600 font-medium mt-1">Waiting for @{members.find(r => r.id === m.referrer_id)?.username || "—"} to place via Lobby</p>
                       </div>
                       <div className="flex items-center gap-2">
                         {status.isGreen ? (
