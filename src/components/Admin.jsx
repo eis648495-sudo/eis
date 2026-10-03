@@ -1461,7 +1461,10 @@ export default function Admin() {
                 <h2 className="text-lg font-bold text-white mb-4">Change Password</h2>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
                   <p className="text-xs font-bold text-orange-600 uppercase tracking-wide mb-1">Current Password</p>
-                  <p className="text-lg font-bold text-gray-900">{profileMember.password || "—"}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-bold text-gray-900 flex-1 break-all">{profileMember.password || "—"}</p>
+                    <button onClick={() => { navigator.clipboard.writeText(profileMember.password || ""); toast.success("Password copied!"); }} className="p-2 bg-yellow-100 text-orange-600 rounded-lg hover:bg-yellow-200 transition-colors flex-shrink-0" title="Copy password"><Copy className="w-4 h-4" /></button>
+                  </div>
                 </div>
                 <div>
                   <Label className="text-white">New Password</Label>
@@ -1500,7 +1503,10 @@ export default function Admin() {
                 </div>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                   <p className="text-xs font-bold text-orange-600 uppercase tracking-wide mb-1">Current Password</p>
-                  <p className="text-lg font-bold text-gray-900">{editMember.password || "—"}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-bold text-gray-900 flex-1 break-all">{editMember.password || "—"}</p>
+                    <button onClick={() => { navigator.clipboard.writeText(editMember.password || ""); toast.success("Password copied!"); }} className="p-2 bg-yellow-100 text-orange-600 rounded-lg hover:bg-yellow-200 transition-colors flex-shrink-0" title="Copy password"><Copy className="w-4 h-4" /></button>
+                  </div>
                 </div>
                 <div><Label>New Password</Label><Input value={editMember.password || ""} onChange={e => setEditMember({ ...editMember, password: e.target.value })} /></div>
               </div>
