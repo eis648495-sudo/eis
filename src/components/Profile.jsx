@@ -84,8 +84,8 @@ export default function Profile() {
     { key: "email", label: "Email", type: "email" },
     { key: "phone", label: "Phone" },
     { key: "facebook_name", label: "Facebook Name" },
-    { key: "backup_mobile", label: "Backup Mobile" },
-    { key: "address", label: "Address" },
+    { key: "backup_mobile", label: "Complete Address" },
+    { key: "address", label: "Saan malapit ang Address" },
   ];
 
   return (
