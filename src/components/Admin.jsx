@@ -19,6 +19,7 @@ import MonitoringView from "./MonitoringView";
 export default function Admin() {
   const [tab, setTab] = useState("members");
   const [search, setSearch] = useState("");
+  const [showPasswords, setShowPasswords] = useState(false);
 
   const [editMember, setEditMember] = useState(null);
   const [redeemModal, setRedeemModal] = useState(null);
@@ -567,7 +568,9 @@ export default function Admin() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members..." className="pl-10" />
             </div>
-
+            <button onClick={() => setShowPasswords(v => !v)} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm border transition-all ${showPasswords ? "bg-orange-500 text-white border-transparent" : "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"}`}>
+              {showPasswords ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />} {showPasswords ? "Hide" : "Unhide"}
+            </button>
           </div>
 
           {/* Members List — Card Layout */}
@@ -586,6 +589,7 @@ export default function Admin() {
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-900 truncate">{m.full_name}</p>
                     <p className="text-sm text-gray-400 truncate">@{m.username}</p>
+                    {showPasswords && <p className="text-sm font-mono text-orange-600 truncate">🔑 {m.password || "—"}</p>}
                   </div>
                   {/* Status badge */}
                   <div className="flex-shrink-0">
@@ -1461,7 +1465,10 @@ export default function Admin() {
                 <h2 className="text-lg font-bold text-white mb-4">Change Password</h2>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
                   <p className="text-xs font-bold text-orange-600 uppercase tracking-wide mb-1">Current Password</p>
-                  <p className="text-lg font-bold text-gray-900">{profileMember.password || "—"}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-bold text-gray-900 flex-1 break-all">{profileMember.password || "—"}</p>
+                    <button onClick={() => { navigator.clipboard.writeText(profileMember.password || ""); toast.success("Password copied!"); }} className="p-2 bg-yellow-100 text-orange-600 rounded-lg hover:bg-yellow-200 transition-colors flex-shrink-0" title="Copy password"><Copy className="w-4 h-4" /></button>
+                  </div>
                 </div>
                 <div>
                   <Label className="text-white">New Password</Label>
@@ -1500,7 +1507,10 @@ export default function Admin() {
                 </div>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                   <p className="text-xs font-bold text-orange-600 uppercase tracking-wide mb-1">Current Password</p>
-                  <p className="text-lg font-bold text-gray-900">{editMember.password || "—"}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-lg font-bold text-gray-900 flex-1 break-all">{editMember.password || "—"}</p>
+                    <button onClick={() => { navigator.clipboard.writeText(editMember.password || ""); toast.success("Password copied!"); }} className="p-2 bg-yellow-100 text-orange-600 rounded-lg hover:bg-yellow-200 transition-colors flex-shrink-0" title="Copy password"><Copy className="w-4 h-4" /></button>
+                  </div>
                 </div>
                 <div><Label>New Password</Label><Input value={editMember.password || ""} onChange={e => setEditMember({ ...editMember, password: e.target.value })} /></div>
               </div>
