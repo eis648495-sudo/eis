@@ -268,11 +268,16 @@ export default function Genealogy() {
     <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-6 genealogy-scroll">
       <style>{`
         @media (max-width: 1023px) {
-          .genealogy-scroll ::-webkit-scrollbar { width: 40px !important; height: 40px !important; }
-          .genealogy-scroll ::-webkit-scrollbar-track { background: #e5e7eb !important; border-radius: 20px; }
-          .genealogy-scroll ::-webkit-scrollbar-thumb { background: #94a3b8 !important; border-radius: 20px; border: 4px solid #e5e7eb; }
-          .genealogy-scroll ::-webkit-scrollbar-thumb:hover { background: #64748b !important; }
-          .genealogy-scroll * { scrollbar-width: thick !important; scrollbar-color: #94a3b8 #e5e7eb !important; }
+          html::-webkit-scrollbar { width: 40px !important; }
+          html::-webkit-scrollbar-track { background: #e5e7eb !important; border-radius: 20px; }
+          html::-webkit-scrollbar-thumb { background: #94a3b8 !important; border-radius: 20px; border: 4px solid #e5e7eb; }
+          html::-webkit-scrollbar-thumb:hover { background: #64748b !important; }
+          html { scrollbar-width: thick !important; scrollbar-color: #94a3b8 #e5e7eb !important; }
+          .scroll-thick::-webkit-scrollbar { width: 40px !important; height: 40px !important; }
+          .scroll-thick::-webkit-scrollbar-track { background: #e5e7eb !important; border-radius: 20px; }
+          .scroll-thick::-webkit-scrollbar-thumb { background: #94a3b8 !important; border-radius: 20px; border: 4px solid #e5e7eb; }
+          .scroll-thick::-webkit-scrollbar-thumb:hover { background: #64748b !important; }
+          .scroll-thick { scrollbar-width: thick !important; scrollbar-color: #94a3b8 #e5e7eb !important; }
         }
       `}</style>
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -306,7 +311,7 @@ export default function Genealogy() {
             <UserPlus className="w-4 h-4" /> Lobby — {lobbyMembers.length} member{lobbyMembers.length !== 1 ? "s" : ""} waiting for placement
           </h3>
           <p className="text-xs text-amber-700 mb-3">These members registered using your referral link. Click "Place Here" on any node in your tree to position them.</p>
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto pb-1 scroll-thick">
             {lobbyMembers.map(m => (
               <div key={m.id} className="flex-shrink-0 bg-white rounded-xl border border-amber-200 px-3 py-2 flex items-center gap-2">
                 <div className="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center text-amber-600 font-bold text-xs">
@@ -339,7 +344,7 @@ export default function Genealogy() {
               />
             </div>
           </div>
-          <div className="max-h-[168px] overflow-y-auto">
+          <div className="max-h-[168px] overflow-y-auto scroll-thick">
             {(search ? searchResults : approvedMembers).map(m => {
               const status = maintenanceStatus(m, codes);
               const isActive = status.isGreen;
@@ -416,7 +421,7 @@ export default function Genealogy() {
               <button onClick={() => setPlacementTarget(null)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <p className="text-sm text-gray-500 mb-4">Select a lobby member to place as their downline:</p>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
+            <div className="space-y-2 max-h-60 overflow-y-auto scroll-thick">
               {lobbyMembers.map(m => (
                 <button
                   key={m.id}
