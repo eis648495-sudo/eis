@@ -38,7 +38,8 @@ export default function Admin() {
   const [minAmount, setMinAmount] = useState("300");
   const [savingMin, setSavingMin] = useState(false);
   const [txSearch, setTxSearch] = useState("");
-  const [expandedTxMembers, setExpandedTxMembers] = useState(new Set());
+  const [txCategory, setTxCategory] = useState("all");
+  const [txPage, setTxPage] = useState(0);
   const [tabVisibility, setTabVisibility] = useState({ monitoring: true, subadmin: true, terms: true, complan: true, product_conversion: true });
   const [monitorMember, setMonitorMember] = useState(null);
   const [previewReceipt, setPreviewReceipt] = useState(null);
@@ -862,95 +863,85 @@ export default function Admin() {
 
       {/* Transaction History Tab */}
       {tab === "history" && (() => {
-        const grouped = {};
-        filteredTransactions.forEach(t => {
-          const mid = t.member_id || "unknown";
-          if (!grouped[mid]) grouped[mid] = [];
-          grouped[mid].push(t);
-        });
-        const memberIds = Object.keys(grouped).sort((a, b) => {
-          const ma = members.find(m => m.id === a);
-          const mb = members.find(m => m.id === b);
-          return (ma?.full_name || ma?.username || "").localeCompare(mb?.full_name || mb?.username || "");
-        });
-        const toggleMember = (mid) => setExpandedTxMembers(prev => {
-          const next = new Set(prev);
-          if (next.has(mid)) next.delete(mid); else next.add(mid);
-          return next;
-        });
+        const TX_CATEGORIES = [
+          { id: "all", label: "All", pill: "bg-violet-500 text-white", inactive: "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100" },
+          { id: "level_bonus", label: "Level Bonus", pill: "bg-emerald-500 text-white", inactive: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" },
+          { id: "referral_bonus", label: "Referral Bonus", pill: "bg-blue-500 text-white", inactive: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
+          { id: "adjustment", label: "Maintenance Code", pill: "bg-teal-500 text-white", inactive: "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100" },
+          { id: "maintenance_code", label: "Code Redeem", pill: "bg-amber-500 text-white", inactive: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
+          { id: "withdrawal", label: "Withdrawal", pill: "bg-red-500 text-white", inactive: "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" },
+          { id: "product_conversion", label: "Product Wallet", pill: "bg-purple-500 text-white", inactive: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100" },
+        ];
+        const categoryTx = txCategory === "all"
+          ? filteredTransactions
+          : filteredTransactions.filter(t => t.type === txCategory);
+        const PER_PAGE = 10;
+        const totalPages = Math.max(1, Math.ceil(categoryTx.length / PER_PAGE));
+        const currentPage = Math.min(txPage, totalPages - 1);
+        const pageTx = categoryTx.slice(currentPage * PER_PAGE, (currentPage + 1) * PER_PAGE);
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between gap-4">
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><FileText className="w-5 h-5 text-amber-500" /> Transaction History (per User)</h2>
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><FileText className="w-5 h-5 text-amber-500" /> Transaction History</h2>
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input value={txSearch} onChange={e => setTxSearch(e.target.value)} placeholder="Search username..." className="pl-10" />
+                <Input value={txSearch} onChange={e => { setTxSearch(e.target.value); setTxPage(0); }} placeholder="Search username..." className="pl-10" />
               </div>
             </div>
-            {memberIds.length === 0 ? (
-              <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-12 text-center">
-                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-400">No transactions found</p>
-              </div>
-            ) : memberIds.map(mid => {
-              const member = members.find(m => m.id === mid);
-              const txns = grouped[mid];
-              const isExpanded = expandedTxMembers.has(mid);
-              const totalIn = txns.filter(t => !["withdrawal", "product_conversion"].includes(t.type)).reduce((s, t) => s + Math.abs(Number(t.amount || 0)), 0);
-              const totalOut = txns.filter(t => ["withdrawal", "product_conversion"].includes(t.type)).reduce((s, t) => s + Math.abs(Number(t.amount || 0)), 0);
-              return (
-                <div key={mid} className="bg-white rounded-2xl shadow border border-gray-100 overflow-hidden">
-                  <button onClick={() => toggleMember(mid)} className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-left">
-                    <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
-                      {(member?.full_name || "?").charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-900 truncate">{member?.full_name || "Unknown"}</p>
-                      <p className="text-sm text-gray-400 truncate">@{member?.username || "—"}</p>
-                    </div>
-                    <div className="hidden sm:flex items-center gap-6 flex-shrink-0">
-                      <div className="text-right">
-                        <p className="text-xs text-gray-400">In</p>
-                        <p className="text-sm font-bold text-emerald-600">{money(totalIn)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-gray-400">Out</p>
-                        <p className="text-sm font-bold text-red-600">{money(totalOut)}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-gray-400">Txns</p>
-                        <p className="text-sm font-bold text-gray-900">{txns.length}</p>
-                      </div>
-                    </div>
-                    <Badge className="bg-violet-100 text-violet-700 flex-shrink-0">{txns.length}</Badge>
-                    <ChevronDown className={`w-5 h-5 text-gray-400 flex-shrink-0 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+            {/* Category pills */}
+            <div className="flex flex-wrap gap-2">
+              {TX_CATEGORIES.map(cat => {
+                const count = cat.id === "all"
+                  ? filteredTransactions.length
+                  : filteredTransactions.filter(t => t.type === cat.id).length;
+                return (
+                  <button key={cat.id} onClick={() => { setTxCategory(cat.id); setTxPage(0); }}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all border ${txCategory === cat.id ? `${cat.pill} shadow border-transparent` : cat.inactive}`}>
+                    {cat.label} <span className="text-xs opacity-75">({count})</span>
                   </button>
-                  {isExpanded && (
-                    <div className="border-t border-gray-100 overflow-x-auto">
-                      <table className="w-full">
-                        <thead><tr className="border-b border-gray-100 bg-gray-50">
-                          {["Type", "Amount", "Description", "Status", "Date"].map(h => <th key={h} className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>)}
-                        </tr></thead>
-                        <tbody>
-                          {txns.map(t => {
-                            const isWithdrawal = t.type === "withdrawal" || t.type === "product_conversion";
-                            return (
-                              <tr key={t.id} className="border-b border-gray-50 hover:bg-gray-50">
-                                <td className="px-4 py-3"><Badge className="bg-gray-100 text-gray-600 capitalize">{t.type?.replace(/_/g, " ")}</Badge></td>
-                                <td className={`px-4 py-3 text-sm font-bold whitespace-nowrap ${isWithdrawal ? "text-red-600" : "text-emerald-600"}`}>{isWithdrawal ? "−" : "+"}{money(Math.abs(t.amount || 0))}</td>
-                                <td className="px-4 py-3 text-sm text-gray-600">{t.description || "—"}</td>
-                                <td className="px-4 py-3"><Badge className={t.status === "completed" ? "bg-green-100 text-green-700" : t.status === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}>{t.status}</Badge></td>
-                                <td className="px-4 py-3 text-sm text-gray-400 whitespace-nowrap">{formatDate(t.created_date || t.created_at, "MMM d, yyyy")}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                );
+              })}
+            </div>
+            {/* Transaction table — 10 per page, scrollable & swipeable */}
+            <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="max-h-[460px] overflow-y-auto overscroll-contain touch-pan-y">
+                <table className="w-full">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="border-b border-gray-100 bg-gray-50">
+                      {["Member", "Type", "Amount", "Description", "Status", "Date"].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageTx.length === 0 ? (
+                      <tr><td colSpan="6" className="text-center py-12 text-gray-400">No transactions in this category</td></tr>
+                    ) : pageTx.map(t => {
+                      const member = members.find(m => m.id === t.member_id);
+                      const isWithdrawal = t.type === "withdrawal" || t.type === "product_conversion";
+                      return (
+                        <tr key={t.id} className="border-b border-gray-50 hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{member?.full_name || "—"} <span className="text-gray-400 text-xs">@{member?.username || ""}</span></td>
+                          <td className="px-4 py-3"><Badge className="bg-gray-100 text-gray-600 capitalize">{t.type?.replace(/_/g, " ")}</Badge></td>
+                          <td className={`px-4 py-3 text-sm font-bold whitespace-nowrap ${isWithdrawal ? "text-red-600" : "text-emerald-600"}`}>{isWithdrawal ? "−" : "+"}{money(Math.abs(t.amount || 0))}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{t.description || "—"}</td>
+                          <td className="px-4 py-3"><Badge className={t.status === "completed" ? "bg-green-100 text-green-700" : t.status === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}>{t.status}</Badge></td>
+                          <td className="px-4 py-3 text-sm text-gray-400 whitespace-nowrap">{formatDate(t.created_date || t.created_at, "MMM d, yyyy")}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {/* Pagination */}
+              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50">
+                <span className="text-sm text-gray-500">Page {currentPage + 1} of {totalPages} • {categoryTx.length} transactions</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setTxPage(p => Math.max(0, p - 1))} disabled={currentPage === 0}
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium border transition-all bg-white border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">← Prev</button>
+                  <button onClick={() => setTxPage(p => Math.min(totalPages - 1, p + 1))} disabled={currentPage >= totalPages - 1}
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium border transition-all bg-white border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">Next →</button>
                 </div>
-              );
-            })}
+              </div>
+            </div>
           </div>
         );
       })()}
