@@ -569,7 +569,7 @@ export default function Admin() {
               <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members..." className="pl-10" />
             </div>
             <button onClick={() => setShowPasswords(v => !v)} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm border transition-all ${showPasswords ? "bg-orange-500 text-white border-transparent" : "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100"}`}>
-              {showPasswords ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />} {showPasswords ? "Hide Passwords" : "Show Passwords"}
+              {showPasswords ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />} {showPasswords ? "Hide" : "Unhide"}
             </button>
           </div>
 
