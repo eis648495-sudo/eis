@@ -369,9 +369,9 @@ export default function Genealogy() {
         </div>
 
         {/* Right: Tree visualization */}
-        <div className="flex-1 min-h-[700px] flex flex-col bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-          {/* Zoom controls */}
-          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100">
+        <div className="flex-1 min-h-[700px] flex flex-col bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200">
+          {/* Zoom controls — sticky below the mobile header so they never scroll under it */}
+          <div className="sticky top-16 lg:static z-30 bg-white flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100 rounded-t-2xl">
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Activity className="w-4 h-4" />
               <span>Network tree — <strong className="text-gray-700">{selected?.username || selected?.full_name || "—"}</strong></span>
