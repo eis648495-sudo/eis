@@ -265,7 +265,16 @@ export default function Genealogy() {
   const resetView = () => { setPan({ x: 0, y: 0 }); setZoom(100); };
 
   return (
-    <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-6">
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-6 genealogy-scroll">
+      <style>{`
+        @media (max-width: 1023px) {
+          .genealogy-scroll ::-webkit-scrollbar { width: 40px !important; height: 40px !important; }
+          .genealogy-scroll ::-webkit-scrollbar-track { background: #e5e7eb !important; border-radius: 20px; }
+          .genealogy-scroll ::-webkit-scrollbar-thumb { background: #94a3b8 !important; border-radius: 20px; border: 4px solid #e5e7eb; }
+          .genealogy-scroll ::-webkit-scrollbar-thumb:hover { background: #64748b !important; }
+          .genealogy-scroll * { scrollbar-width: thick !important; scrollbar-color: #94a3b8 #e5e7eb !important; }
+        }
+      `}</style>
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
           <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl">
