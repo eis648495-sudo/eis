@@ -1423,8 +1423,8 @@ export default function Admin() {
               </div>
 
               {/* Personal Information */}
-              <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Personal Information</h2>
+              <div className="bg-gray-900 rounded-3xl shadow-lg border border-gray-800 p-6">
+                <h2 className="text-lg font-bold text-white mb-4">Personal Information</h2>
                 <div className="space-y-4">
                   {[
                     { key: "full_name", label: "Full Name" },
@@ -1436,38 +1436,38 @@ export default function Admin() {
                     { key: "address", label: "Saan malapit ang Address" },
                   ].map(f => (
                     <div key={f.key}>
-                      <Label>{f.label}</Label>
-                      <Input value={profileForm[f.key] || ""} onChange={e => setProfileForm({ ...profileForm, [f.key]: e.target.value })} type={f.type || "text"} />
+                      <Label className="text-white">{f.label}</Label>
+                      <Input value={profileForm[f.key] || ""} onChange={e => setProfileForm({ ...profileForm, [f.key]: e.target.value })} type={f.type || "text"} className="bg-white border-gray-300 text-gray-900 placeholder-gray-400" />
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* GCash Details */}
-              <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">GCash Details</h2>
+              <div className="bg-gray-900 rounded-3xl shadow-lg border border-gray-800 p-6">
+                <h2 className="text-lg font-bold text-white mb-4">GCash Details</h2>
                 <div className="space-y-4">
                   <div>
-                    <Label>GCash Number</Label>
+                    <Label className="text-white">GCash Number</Label>
                     <div className="flex gap-2">
-                      <Input value={profileForm.gcash_number || ""} onChange={e => setProfileForm({ ...profileForm, gcash_number: e.target.value })} placeholder="09XX XXX XXXX" className="flex-1" />
-                      <button onClick={() => { if (profileForm.gcash_number) { navigator.clipboard.writeText(profileForm.gcash_number); toast.success("GCash number copied!"); } }} className="px-4 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors flex-shrink-0" title="Copy GCash number"><Copy className="w-4 h-4" /></button>
+                      <Input value={profileForm.gcash_number || ""} onChange={e => setProfileForm({ ...profileForm, gcash_number: e.target.value })} placeholder="09XX XXX XXXX" className="flex-1 bg-white border-gray-300 text-gray-900 placeholder-gray-400" />
+                      <button onClick={() => { if (profileForm.gcash_number) { navigator.clipboard.writeText(profileForm.gcash_number); toast.success("GCash number copied!"); } }} className="px-4 bg-white border-gray-300 text-gray-600 rounded-xl hover:bg-gray-50 transition-colors flex-shrink-0" title="Copy GCash number"><Copy className="w-4 h-4" /></button>
                     </div>
                   </div>
-                  <div><Label>GCash Name</Label><Input value={profileForm.gcash_name || ""} onChange={e => setProfileForm({ ...profileForm, gcash_name: e.target.value })} placeholder="Registered name" /></div>
+                  <div><Label className="text-white">GCash Name</Label><Input value={profileForm.gcash_name || ""} onChange={e => setProfileForm({ ...profileForm, gcash_name: e.target.value })} placeholder="Registered name" className="bg-white border-gray-300 text-gray-900 placeholder-gray-400" /></div>
                 </div>
               </div>
 
               {/* Change Password */}
-              <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Change Password</h2>
+              <div className="bg-gray-900 rounded-3xl shadow-lg border border-gray-800 p-6">
+                <h2 className="text-lg font-bold text-white mb-4">Change Password</h2>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
                   <p className="text-xs font-bold text-orange-600 uppercase tracking-wide mb-1">Current Password</p>
                   <p className="text-lg font-bold text-gray-900">{profileMember.password || "—"}</p>
                 </div>
                 <div>
-                  <Label>New Password</Label>
-                  <Input value={profileForm.password || ""} onChange={e => setProfileForm({ ...profileForm, password: e.target.value })} type="password" placeholder="Leave blank to keep current password" />
+                  <Label className="text-white">New Password</Label>
+                  <Input value={profileForm.password || ""} onChange={e => setProfileForm({ ...profileForm, password: e.target.value })} type="password" placeholder="Leave blank to keep current password" className="bg-white border-gray-300 text-gray-900 placeholder-gray-400" />
                 </div>
               </div>
 
