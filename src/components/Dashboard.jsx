@@ -13,6 +13,7 @@ export default function Dashboard() {
   const [code, setCode] = useState("");
   const [redeemBusy, setRedeemBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState("");
 
   const { data: members = [], isLoading } = useTable("members");
   const { data: allCodes = [] } = useTable("maintenance_codes");
@@ -22,6 +23,7 @@ export default function Dashboard() {
   const { currentMember } = useCurrentMember(members);
 
   const termsVisible = settings.find(s => s.setting_key === "tab_terms_visible")?.setting_value !== "false";
+  const productConversionVisible = settings.find(s => s.setting_key === "tab_product_conversion_visible")?.setting_value !== "false";
   const minWithdrawal = settings.find(s => s.setting_key === "withdrawal_minimum_amount")?.setting_value || "300";
   const minAmount = parseFloat(minWithdrawal);
 
@@ -50,14 +52,18 @@ export default function Dashboard() {
       toast.error("Please fill in your GCash details, phone, and address in My Profile.");
       return;
     }
-    if (availableBalance < minAmount) {
-      toast.error(`You need at least ₱${minAmount.toLocaleString()} to withdraw.`);
+    if (withdrawValue < minAmount) {
+      toast.error(`Minimum withdrawal is ₱${minAmount.toLocaleString()}.`);
+      return;
+    }
+    if (withdrawValue > availableBalance) {
+      toast.error("Amount exceeds your available balance.");
       return;
     }
     try {
       await createRecord("conversion_requests", {
         member_id: currentMember.id,
-        amount: availableBalance,
+        amount: withdrawValue,
         status: "pending",
       });
       toast.success("Withdrawal request submitted!");
@@ -200,7 +206,8 @@ export default function Dashboard() {
 
   if (!currentMember) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-gray-200 border-t-gray-800 rounded-full animate-spin" /></div>;
 
-  const charge = withdrawalCharge(availableBalance, minAmount);
+  const withdrawValue = parseFloat(withdrawAmount) || 0;
+  const charge = withdrawalCharge(withdrawValue > 0 ? withdrawValue : availableBalance, minAmount);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -242,16 +249,28 @@ export default function Dashboard() {
                 <span>Complete your profile (GCash, phone, address) to withdraw — <Link to="/Profile" className="underline font-semibold">My Profile</Link></span>
               </div>
             )}
-            {availableBalance >= minAmount && !pendingWithdrawal && (
-              <div className="mt-5 bg-white/20 rounded-2xl px-4 py-3 text-sm text-white space-y-1">
-                <p className="font-bold">📋 Withdrawal Transaction Charge</p>
-                <p>• ₱{minAmount.toLocaleString()}–₱999: flat <span className="font-bold">₱10</span> charge</p>
-                <p>• ₱1,000+: <span className="font-bold">₱15 per ₱1,000</span></p>
-                <div className="border-t border-white/30 mt-2 pt-2 flex justify-between">
-                  <span>Your balance: <span className="font-bold">{money(availableBalance)}</span></span>
-                  <span>Charge: <span className="font-bold text-yellow-300">{money(charge)}</span></span>
-                </div>
-                <p className="font-bold text-yellow-200">You will receive: ₱{(availableBalance - charge).toLocaleString()}</p>
+            {profileComplete && availableBalance >= minAmount && !pendingWithdrawal && (
+              <div className="mt-5 bg-white/20 rounded-2xl px-4 py-3 text-sm text-white space-y-2">
+                <p className="font-bold">📋 Enter withdrawal amount</p>
+                <input
+                  type="number"
+                  value={withdrawAmount}
+                  onChange={e => setWithdrawAmount(e.target.value)}
+                  placeholder={`Min ₱${minAmount.toLocaleString()} · Max ${money(availableBalance)}`}
+                  className="w-full h-12 rounded-xl border border-white/30 bg-white/10 px-4 text-white text-lg font-bold outline-none focus:border-white/60 placeholder:text-white/40 placeholder:text-sm placeholder:font-normal"
+                />
+                {withdrawValue >= minAmount && withdrawValue <= availableBalance ? (
+                  <>
+                    <p>• ₱{minAmount.toLocaleString()}–₱999: flat <span className="font-bold">₱10</span> charge</p>
+                    <p>• ₱1,000+: <span className="font-bold">₱15 per ₱1,000</span></p>
+                    <div className="border-t border-white/30 mt-2 pt-2 flex justify-between">
+                      <span>Charge: <span className="font-bold text-yellow-300">{money(charge)}</span></span>
+                      <span className="font-bold text-yellow-200">You receive: ₱{(withdrawValue - charge).toLocaleString()}</span>
+                    </div>
+                  </>
+                ) : withdrawValue > availableBalance ? (
+                  <p className="text-red-300 font-medium">Amount exceeds your available balance.</p>
+                ) : null}
               </div>
             )}
             {productWalletBalance > 0 && (
@@ -270,14 +289,16 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <>
-                  <Button onClick={handleWithdraw} disabled={availableBalance < minAmount || !profileComplete}
-                    className="bg-white text-emerald-700 hover:bg-emerald-50 font-bold text-base px-8 py-4 h-auto rounded-2xl shadow-lg disabled:opacity-100 disabled:text-gray-400">
+                  <Button onClick={handleWithdraw} disabled={withdrawValue < minAmount || withdrawValue > availableBalance || !profileComplete}
+                    className="bg-white text-emerald-700 hover:bg-emerald-50 font-bold text-base px-8 py-4 h-auto rounded-2xl shadow-lg disabled:opacity-100 disabled:text-gray-600">
                     <Wallet className="w-5 h-5 mr-2" /> Withdraw Now
                 </Button>
+                  {productConversionVisible && (
                   <Button onClick={handleConvertToProduct} disabled={availableBalance < minAmount}
                     className="bg-purple-500 text-white hover:bg-purple-600 font-bold text-base px-6 py-4 h-auto rounded-2xl shadow-lg disabled:opacity-100 disabled:text-white/40 disabled:bg-purple-500/50">
                     <ShoppingBag className="w-5 h-5 mr-2" /> Convert to Product Wallet
                   </Button>
+                  )}
                 </>
               )}
               <Button onClick={() => setShowHistory(!showHistory)} variant="ghost"

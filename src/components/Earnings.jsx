@@ -10,7 +10,10 @@ export default function Earnings() {
   const [filter, setFilter] = useState("all");
   const { data: members = [] } = useTable("members");
   const { data: transactions = [] } = useTable("transactions");
+  const { data: settings = [] } = useTable("system_settings");
   const { currentMember } = useCurrentMember(members);
+
+  const productConversionVisible = settings.find(s => s.setting_key === "tab_product_conversion_visible")?.setting_value !== "false";
 
   if (!currentMember) {
     return (
@@ -70,11 +73,13 @@ export default function Earnings() {
           <p className="text-emerald-100 text-sm">Available Balance</p>
           <p className="text-4xl font-extrabold mt-1">{money(availableBalance)}</p>
         </motion.div>
+        {productConversionVisible && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl p-6 text-white shadow-xl">
           <ShoppingBag className="w-8 h-8 mb-3" />
           <p className="text-purple-100 text-sm">Product Wallet</p>
           <p className="text-4xl font-extrabold mt-1">{money(productWalletBalance)}</p>
         </motion.div>
+        )}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl p-6 text-white shadow-xl">
           <Wallet className="w-8 h-8 mb-3" />
           <p className="text-blue-100 text-sm">Total Withdrawn</p>
@@ -100,7 +105,7 @@ export default function Earnings() {
               <option value="referral_bonus">Referral Bonus</option>
               <option value="adjustment">Maintenance Code</option>
               <option value="withdrawal">Withdrawal</option>
-              <option value="product_conversion">Product Wallet</option>
+              {productConversionVisible && <option value="product_conversion">Product Wallet</option>}
             </select>
           </div>
         </div>
