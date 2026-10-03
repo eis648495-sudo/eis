@@ -134,13 +134,13 @@ export default function Profile() {
 
       {/* Editable fields */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-        className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 mb-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Personal Information</h2>
+        className="bg-gray-900 rounded-3xl shadow-lg border border-gray-800 p-6 mb-6">
+        <h2 className="text-lg font-bold text-white mb-4">Personal Information</h2>
         <div className="space-y-4">
           {fields.map(f => (
             <div key={f.key}>
-              <Label>{f.label}</Label>
-              <Input value={form[f.key]} onChange={update(f.key)} type={f.type || "text"} />
+              <Label className="text-gray-300">{f.label}</Label>
+              <Input value={form[f.key]} onChange={update(f.key)} type={f.type || "text"} className="bg-gray-800 border-gray-700 text-white placeholder-gray-500" />
             </div>
           ))}
         </div>
@@ -148,34 +148,34 @@ export default function Profile() {
 
       {/* GCash info */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-        className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 mb-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">GCash Details</h2>
+        className="bg-gray-900 rounded-3xl shadow-lg border border-gray-800 p-6 mb-6">
+        <h2 className="text-lg font-bold text-white mb-4">GCash Details</h2>
         <div className="space-y-4">
           <div>
-            <Label>GCash Number</Label>
+            <Label className="text-gray-300">GCash Number</Label>
             <div className="flex gap-2">
-              <Input value={form.gcash_number} onChange={update("gcash_number")} placeholder="09XX XXX XXXX" className="flex-1" />
-              <Button onClick={copyGcash} variant="outline" className="px-4">{copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}</Button>
+              <Input value={form.gcash_number} onChange={update("gcash_number")} placeholder="09XX XXX XXXX" className="flex-1 bg-gray-800 border-gray-700 text-white placeholder-gray-500" />
+              <Button onClick={copyGcash} variant="outline" className="px-4 bg-gray-800 border-gray-700 text-white hover:bg-gray-700">{copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}</Button>
             </div>
           </div>
           <div>
-            <Label>GCash Name</Label>
-            <Input value={form.gcash_name} onChange={update("gcash_name")} placeholder="Registered name" />
+            <Label className="text-gray-300">GCash Name</Label>
+            <Input value={form.gcash_name} onChange={update("gcash_name")} placeholder="Registered name" className="bg-gray-800 border-gray-700 text-white placeholder-gray-500" />
           </div>
         </div>
       </motion.div>
 
       {/* Change Password */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6 mb-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Change Password</h2>
+        className="bg-gray-900 rounded-3xl shadow-lg border border-gray-800 p-6 mb-6">
+        <h2 className="text-lg font-bold text-white mb-4">Change Password</h2>
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
           <p className="text-xs font-bold text-orange-600 uppercase tracking-wide mb-1">Current Password</p>
           <p className="text-lg font-bold text-gray-900">{currentMember.password || "—"}</p>
         </div>
         <div>
-          <Label>New Password</Label>
-          <Input value={form.password} onChange={update("password")} type="password" placeholder="Leave blank to keep current password" />
+          <Label className="text-gray-300">New Password</Label>
+          <Input value={form.password} onChange={update("password")} type="password" placeholder="Leave blank to keep current password" className="bg-gray-800 border-gray-700 text-white placeholder-gray-500" />
         </div>
       </motion.div>
 
