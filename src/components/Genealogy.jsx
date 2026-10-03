@@ -267,18 +267,16 @@ export default function Genealogy() {
   return (
     <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-6 genealogy-scroll">
       <style>{`
-        @media (max-width: 1023px) {
-          html::-webkit-scrollbar { width: 40px !important; }
-          html::-webkit-scrollbar-track { background: #e5e7eb !important; border-radius: 20px; }
-          html::-webkit-scrollbar-thumb { background: #94a3b8 !important; border-radius: 20px; border: 4px solid #e5e7eb; }
-          html::-webkit-scrollbar-thumb:hover { background: #64748b !important; }
-          html { scrollbar-width: thick !important; scrollbar-color: #94a3b8 #e5e7eb !important; }
-          .scroll-thick::-webkit-scrollbar { width: 40px !important; height: 40px !important; }
-          .scroll-thick::-webkit-scrollbar-track { background: #e5e7eb !important; border-radius: 20px; }
-          .scroll-thick::-webkit-scrollbar-thumb { background: #94a3b8 !important; border-radius: 20px; border: 4px solid #e5e7eb; }
-          .scroll-thick::-webkit-scrollbar-thumb:hover { background: #64748b !important; }
-          .scroll-thick { scrollbar-width: thick !important; scrollbar-color: #94a3b8 #e5e7eb !important; }
-        }
+        html::-webkit-scrollbar { width: 40px !important; }
+        html::-webkit-scrollbar-track { background: #e5e7eb !important; border-radius: 20px; }
+        html::-webkit-scrollbar-thumb { background: #6366f1 !important; border-radius: 20px; border: 4px solid #e5e7eb; }
+        html::-webkit-scrollbar-thumb:hover { background: #4f46e5 !important; }
+        html { scrollbar-width: thick !important; scrollbar-color: #6366f1 #e5e7eb !important; }
+        .scroll-thick::-webkit-scrollbar { width: 40px !important; height: 40px !important; }
+        .scroll-thick::-webkit-scrollbar-track { background: #e5e7eb !important; border-radius: 20px; }
+        .scroll-thick::-webkit-scrollbar-thumb { background: #6366f1 !important; border-radius: 20px; border: 4px solid #e5e7eb; }
+        .scroll-thick::-webkit-scrollbar-thumb:hover { background: #4f46e5 !important; }
+        .scroll-thick { scrollbar-width: thick !important; scrollbar-color: #6366f1 #e5e7eb !important; }
       `}</style>
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
