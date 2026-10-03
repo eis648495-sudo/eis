@@ -347,7 +347,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Maintenance Code</h2>
-                <p className="text-sm text-gray-500">Redeem to earn rewards — your uplines earn level bonuses automatically</p>
+                <p className="text-sm text-gray-500">Paki-Paste po sa box sa ibaba ang iyong eksaktong Code at i-click ang "Redeem Code" button</p>
               </div>
             </div>
           </div>

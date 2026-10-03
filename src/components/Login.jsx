@@ -12,7 +12,7 @@ const LOGO_URL = "https://media.base44.com/images/public/69f351e73d5a6169e8e9b7a
 export default function Login() {
   const nav = useNavigate();
   const [form, setForm] = useState({ username: "", password: "" });
-  const [showPwd, setShowPwd] = useState(false);
+  const [showPwd, setShowPwd] = useState(true);
   const [busy, setBusy] = useState(false);
 
   async function submit(e) {

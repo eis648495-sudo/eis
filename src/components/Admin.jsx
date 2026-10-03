@@ -19,7 +19,7 @@ import MonitoringView from "./MonitoringView";
 export default function Admin() {
   const [tab, setTab] = useState("members");
   const [search, setSearch] = useState("");
-  const [showPasswords, setShowPasswords] = useState(false);
+
   const [editMember, setEditMember] = useState(null);
   const [redeemModal, setRedeemModal] = useState(null);
   const [redeemCode, setRedeemCode] = useState("");
@@ -567,9 +567,7 @@ export default function Admin() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members..." className="pl-10" />
             </div>
-            <Button onClick={() => setShowPasswords(s => !s)} size="sm" variant="outline" className="flex items-center gap-1.5 whitespace-nowrap">
-              {showPasswords ? <><EyeOff className="w-3.5 h-3.5" /> Hide Passwords</> : <><Eye className="w-3.5 h-3.5" /> Show Passwords</>}
-            </Button>
+
           </div>
 
           {/* Members List — Card Layout */}
@@ -587,7 +585,7 @@ export default function Admin() {
                   {/* User info */}
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-900 truncate">{m.full_name}</p>
-                    <p className="text-sm text-gray-400 truncate">@{m.username}{showPasswords && m.password ? ` · ${m.password}` : ""}</p>
+                    <p className="text-sm text-gray-400 truncate">@{m.username}</p>
                   </div>
                   {/* Status badge */}
                   <div className="flex-shrink-0">
@@ -620,7 +618,7 @@ export default function Admin() {
                     <button onClick={() => setEditMember({ ...m })} className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors" title="Edit Member"><Pencil className="w-4 h-4" /></button>
                     <button onClick={() => { setRedeemModal(m); setRedeemCode(""); }} className="p-2 bg-teal-100 text-teal-600 rounded-lg hover:bg-teal-200 transition-colors" title="Redeem Code"><Key className="w-4 h-4" /></button>
                     {isSupAdmin && <button onClick={() => setEditMember({ ...m })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>}
-                    <button onClick={() => setShowPasswords(s => !s)} className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors" title="Toggle Passwords"><Lock className="w-4 h-4" /></button>
+
                     {isSupAdmin && <button onClick={() => setEditMember({ ...m })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>}
                     {isExpired && getDirectDownlineCount(m.id) === 0 && (
                       <button onClick={() => setConfirmDelete({ type: "member", id: m.id, name: m.full_name || m.username })} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Delete Account"><Trash2 className="w-4 h-4" /></button>
@@ -1485,11 +1483,9 @@ export default function Admin() {
       )}
 
       {/* Reset Credentials Modal */}
-      <AnimatePresence>
-        {editMember && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditMember(null)}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-3xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+      {editMember && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditMember(null)}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
               <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="text-lg font-bold text-gray-900">Reset Credentials — {editMember.username}</h2>
                 <button onClick={() => setEditMember(null)} className="p-1 rounded-lg hover:bg-gray-100"><XIcon className="w-5 h-5 text-gray-400" /></button>
@@ -1512,17 +1508,14 @@ export default function Admin() {
                 <Button onClick={() => setEditMember(null)} variant="outline" className="flex-1">Cancel</Button>
                 <Button onClick={saveEditMember} className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white">Save Changes</Button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
 
       {/* Redeem Code Modal */}
-      <AnimatePresence>
-        {redeemModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setRedeemModal(null); setRedeemCode(""); }}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-3xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+      {redeemModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => { setRedeemModal(null); setRedeemCode(""); }}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
               <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Key className="w-5 h-5 text-teal-600" /> Redeem Code — {redeemModal.username}</h2>
                 <button onClick={() => { setRedeemModal(null); setRedeemCode(""); }} className="p-1 rounded-lg hover:bg-gray-100"><XIcon className="w-5 h-5 text-gray-400" /></button>
@@ -1540,17 +1533,14 @@ export default function Admin() {
                 <Button onClick={() => { setRedeemModal(null); setRedeemCode(""); }} variant="outline" className="flex-1">Cancel</Button>
                 <Button onClick={redeemCodeForMember} disabled={redeemBusy} className="flex-1 bg-teal-500 hover:bg-teal-600 text-white">{redeemBusy ? "Redeeming..." : "Redeem Code"}</Button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
 
       {/* Change Sponsor Modal */}
-      <AnimatePresence>
-        {sponsorModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSponsorModal(null)}>
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-3xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+      {sponsorModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setSponsorModal(null)}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
               <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                 <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><GitBranch className="w-5 h-5 text-amber-500" /> Change Sponsor — {sponsorModal.member?.full_name}</h2>
                 <button onClick={() => setSponsorModal(null)} className="p-1 rounded-lg hover:bg-gray-100"><XIcon className="w-5 h-5 text-gray-400" /></button>
@@ -1573,10 +1563,9 @@ export default function Admin() {
                 <Button onClick={() => changeSponsor(sponsorModal.member.id, sponsorModal.newSponsorId)} className="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 text-white">Update Sponsor</Button>
                 <Button onClick={() => setSponsorModal(null)} variant="outline" className="flex-1">Cancel</Button>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
 
       {/* Receipt Preview Modal */}
       <AnimatePresence>
