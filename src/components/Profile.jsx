@@ -140,7 +140,7 @@ export default function Profile() {
           {fields.map(f => (
             <div key={f.key}>
               <Label className="text-gray-300">{f.label}</Label>
-              <Input value={form[f.key]} onChange={update(f.key)} type={f.type || "text"} className="bg-gray-800 border-gray-700 text-white placeholder-gray-500" />
+              <Input value={form[f.key]} onChange={update(f.key)} type={f.type || "text"} className="bg-white border-gray-300 text-gray-900 placeholder-gray-400" />
             </div>
           ))}
         </div>
@@ -154,13 +154,13 @@ export default function Profile() {
           <div>
             <Label className="text-gray-300">GCash Number</Label>
             <div className="flex gap-2">
-              <Input value={form.gcash_number} onChange={update("gcash_number")} placeholder="09XX XXX XXXX" className="flex-1 bg-gray-800 border-gray-700 text-white placeholder-gray-500" />
-              <Button onClick={copyGcash} variant="outline" className="px-4 bg-gray-800 border-gray-700 text-white hover:bg-gray-700">{copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}</Button>
+              <Input value={form.gcash_number} onChange={update("gcash_number")} placeholder="09XX XXX XXXX" className="flex-1 bg-white border-gray-300 text-gray-900 placeholder-gray-400" />
+              <Button onClick={copyGcash} variant="outline" className="px-4 bg-white border-gray-300 text-gray-900 hover:bg-gray-50">{copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}</Button>
             </div>
           </div>
           <div>
             <Label className="text-gray-300">GCash Name</Label>
-            <Input value={form.gcash_name} onChange={update("gcash_name")} placeholder="Registered name" className="bg-gray-800 border-gray-700 text-white placeholder-gray-500" />
+            <Input value={form.gcash_name} onChange={update("gcash_name")} placeholder="Registered name" className="bg-white border-gray-300 text-gray-900 placeholder-gray-400" />
           </div>
         </div>
       </motion.div>
@@ -175,7 +175,7 @@ export default function Profile() {
         </div>
         <div>
           <Label className="text-gray-300">New Password</Label>
-          <Input value={form.password} onChange={update("password")} type="password" placeholder="Leave blank to keep current password" className="bg-gray-800 border-gray-700 text-white placeholder-gray-500" />
+          <Input value={form.password} onChange={update("password")} type="password" placeholder="Leave blank to keep current password" className="bg-white border-gray-300 text-gray-900 placeholder-gray-400" />
         </div>
       </motion.div>
 
