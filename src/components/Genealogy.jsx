@@ -15,6 +15,7 @@ export default function Genealogy() {
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef(null);
   const panStart = useRef(null);
+  const treeRef = useRef(null);
   const [placementTarget, setPlacementTarget] = useState(null);
   const [placing, setPlacing] = useState(false);
   const [, setTick] = useState(0);
@@ -22,11 +23,13 @@ export default function Genealogy() {
   const { data: codes = [] } = useTable("maintenance_codes");
   const { currentMember } = useCurrentMember(members);
 
-  // Live countdown — re-render every second so maintenance timers tick down
+  // Live countdown — re-render every second so maintenance timers tick down.
+  // Paused during drag to keep panning smooth on mobile.
   useEffect(() => {
+    if (isDragging) return;
     const interval = setInterval(() => setTick(t => t + 1), 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isDragging]);
 
   useEffect(() => {
     if (currentMember && !selected) setSelected(currentMember);
@@ -249,13 +252,23 @@ export default function Genealogy() {
   };
 
   const handlePointerMove = (e) => {
-    if (!isDragging) return;
+    if (!isDragging || !treeRef.current) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
-    setPan({ x: panStart.current.x + dx, y: panStart.current.y + dy });
+    // Update the DOM directly — bypassing React re-renders for smooth 60fps panning.
+    const nx = panStart.current.x + dx;
+    const ny = panStart.current.y + dy;
+    treeRef.current.style.transform = `translate3d(${nx}px, ${ny}px, 0) scale(${zoom / 100})`;
   };
 
   const handlePointerUp = (e) => {
+    if (isDragging) {
+      // Commit final position to React state once, after the drag ends.
+      if (treeRef.current) {
+        const match = treeRef.current.style.transform.match(/translate3d\(([-\d.]+)px,\s*([-\d.]+)px/);
+        if (match) setPan({ x: parseFloat(match[1]), y: parseFloat(match[2]) });
+      }
+    }
     setIsDragging(false);
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
@@ -395,7 +408,7 @@ export default function Genealogy() {
             onPointerCancel={handlePointerUp}
             onPointerLeave={handlePointerUp}
           >
-            <div style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom / 100})`, transformOrigin: 'top center', transition: isDragging ? 'none' : 'transform 0.2s' }}>
+            <div ref={treeRef} style={{ transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom / 100})`, transformOrigin: 'top center', transition: isDragging ? 'none' : 'transform 0.15s ease-out', willChange: 'transform' }}>
               {selected ? <TreeNode member={selected} /> : (
                 <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                   <Users className="w-12 h-12 mb-3 text-gray-300" />
