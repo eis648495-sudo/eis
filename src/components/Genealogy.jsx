@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import { GitBranch, Search, ArrowRight, Users, ZoomIn, ZoomOut, User, Clock, Activity, UserPlus, X, Heart } from "lucide-react";
 import { useTable, useCurrentMember, updateRecord } from "../lib/useData";
 import { Button } from "./ui";
-import { maintenanceStatus, formatTime } from "../lib/helpers";
+import { maintenanceStatus, formatTime, LEVEL_CONFIG, MAX_BONUS_LEVEL } from "../lib/helpers";
+import { supabase } from "../lib/supabase";
 import toast from "react-hot-toast";
 
 export default function Genealogy() {
@@ -208,6 +209,11 @@ export default function Genealogy() {
         direct_downlines_count: (placementTarget.direct_downlines_count || 0) + 1,
       });
       if (countError) console.error("Failed to update downline count:", countError.message);
+
+      // If the member already redeemed a maintenance code while in the lobby,
+      // distribute upline bonuses now that they've been placed (status → approved).
+      await distributeDeferredBonuses(lobbyMember);
+
       toast.success(`${lobbyMember.username} placed under ${placementTarget.username}`);
       setPlacementTarget(null);
       await refetchMembers();
@@ -215,6 +221,55 @@ export default function Genealogy() {
       toast.error(err.message || "Failed to place member");
     }
     setPlacing(false);
+  }
+
+  // Distribute upline bonuses for a member who redeemed a code while still in
+  // the lobby (pending).  Called from handlePlaceMember once status → approved.
+  async function distributeDeferredBonuses(placedMember) {
+    try {
+      // Check if this member already redeemed a maintenance code
+      const { data: redeemedCodes } = await supabase
+        .from("maintenance_codes")
+        .select("*")
+        .eq("is_used", true)
+        .eq("used_by_member_id", placedMember.id);
+      if (!redeemedCodes || redeemedCodes.length === 0) return;
+
+      // Fetch fresh members + codes so upline maintenance status is accurate
+      const { data: freshMembers } = await supabase.from("members").select("*");
+      const { data: freshCodes } = await supabase.from("maintenance_codes").select("*");
+      const allMembers = freshMembers || members;
+      const allCodes = freshCodes || codes;
+
+      const canEarn = (m) => {
+        if (!m || m.status !== "approved") return false;
+        return maintenanceStatus(m, allCodes).isGreen;
+      };
+
+      // Walk up the referrer chain, paying bonuses at each level (1..5)
+      let current = placedMember;
+      for (let level = 1; level <= MAX_BONUS_LEVEL; level++) {
+        const upline = allMembers.find(m => m.id === current.referrer_id);
+        if (!upline) break;
+        if (canEarn(upline)) {
+          const bonus = LEVEL_CONFIG.find(l => l.level === level)?.bonus_amount || 0;
+          if (bonus > 0) {
+            await supabase.from("transactions").insert({
+              member_id: upline.id,
+              type: "referral_bonus",
+              amount: bonus,
+              bonus_level: level,
+              description: `Level ${level} bonus from ${placedMember.username}`,
+              status: "completed",
+              from_member_id: placedMember.id,
+            });
+          }
+        }
+        current = upline;
+      }
+    } catch (err) {
+      console.error("Failed to distribute deferred bonuses:", err.message);
+    }
   }
 
   if (isLoading) {
