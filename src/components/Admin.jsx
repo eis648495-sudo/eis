@@ -38,6 +38,8 @@ export default function Admin() {
   const [minAmount, setMinAmount] = useState("300");
   const [savingMin, setSavingMin] = useState(false);
   const [txSearch, setTxSearch] = useState("");
+  const [txCategory, setTxCategory] = useState("all");
+  const [txPage, setTxPage] = useState(0);
   const [tabVisibility, setTabVisibility] = useState({ monitoring: true, subadmin: true, terms: true, complan: true, product_conversion: true });
   const [monitorMember, setMonitorMember] = useState(null);
   const [previewReceipt, setPreviewReceipt] = useState(null);
@@ -860,44 +862,89 @@ export default function Admin() {
       )}
 
       {/* Transaction History Tab */}
-      {tab === "history" && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><FileText className="w-5 h-5 text-amber-500" /> All User Transaction History</h2>
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input value={txSearch} onChange={e => setTxSearch(e.target.value)} placeholder="Search by member or type..." className="pl-10" />
+      {tab === "history" && (() => {
+        const TX_CATEGORIES = [
+          { id: "all", label: "All", pill: "bg-violet-500 text-white", inactive: "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100" },
+          { id: "level_bonus", label: "Level Bonus", pill: "bg-emerald-500 text-white", inactive: "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" },
+          { id: "referral_bonus", label: "Referral Bonus", pill: "bg-blue-500 text-white", inactive: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
+          { id: "adjustment", label: "Maintenance Code", pill: "bg-teal-500 text-white", inactive: "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100" },
+          { id: "maintenance_code", label: "Code Redeem", pill: "bg-amber-500 text-white", inactive: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
+          { id: "withdrawal", label: "Withdrawal", pill: "bg-red-500 text-white", inactive: "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" },
+          { id: "product_conversion", label: "Product Wallet", pill: "bg-purple-500 text-white", inactive: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100" },
+        ];
+        const categoryTx = txCategory === "all"
+          ? filteredTransactions
+          : filteredTransactions.filter(t => t.type === txCategory);
+        const PER_PAGE = 10;
+        const totalPages = Math.max(1, Math.ceil(categoryTx.length / PER_PAGE));
+        const currentPage = Math.min(txPage, totalPages - 1);
+        const pageTx = categoryTx.slice(currentPage * PER_PAGE, (currentPage + 1) * PER_PAGE);
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><FileText className="w-5 h-5 text-amber-500" /> Transaction History</h2>
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input value={txSearch} onChange={e => { setTxSearch(e.target.value); setTxPage(0); }} placeholder="Search username..." className="pl-10" />
+              </div>
+            </div>
+            {/* Category pills */}
+            <div className="flex flex-wrap gap-2">
+              {TX_CATEGORIES.map(cat => {
+                const count = cat.id === "all"
+                  ? filteredTransactions.length
+                  : filteredTransactions.filter(t => t.type === cat.id).length;
+                return (
+                  <button key={cat.id} onClick={() => { setTxCategory(cat.id); setTxPage(0); }}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-medium text-sm whitespace-nowrap transition-all border ${txCategory === cat.id ? `${cat.pill} shadow border-transparent` : cat.inactive}`}>
+                    {cat.label} <span className="text-xs opacity-75">({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+            {/* Transaction table — 10 per page, scrollable & swipeable */}
+            <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="max-h-[460px] overflow-y-auto overscroll-contain touch-pan-y">
+                <table className="w-full">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="border-b border-gray-100 bg-gray-50">
+                      {["Member", "Type", "Amount", "Description", "Status", "Date"].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pageTx.length === 0 ? (
+                      <tr><td colSpan="6" className="text-center py-12 text-gray-400">No transactions in this category</td></tr>
+                    ) : pageTx.map(t => {
+                      const member = members.find(m => m.id === t.member_id);
+                      const isWithdrawal = t.type === "withdrawal" || t.type === "product_conversion";
+                      return (
+                        <tr key={t.id} className="border-b border-gray-50 hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{member?.full_name || "—"} <span className="text-gray-400 text-xs">@{member?.username || ""}</span></td>
+                          <td className="px-4 py-3"><Badge className="bg-gray-100 text-gray-600 capitalize">{t.type?.replace(/_/g, " ")}</Badge></td>
+                          <td className={`px-4 py-3 text-sm font-bold whitespace-nowrap ${isWithdrawal ? "text-red-600" : "text-emerald-600"}`}>{isWithdrawal ? "−" : "+"}{money(Math.abs(t.amount || 0))}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{t.description || "—"}</td>
+                          <td className="px-4 py-3"><Badge className={t.status === "completed" ? "bg-green-100 text-green-700" : t.status === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}>{t.status}</Badge></td>
+                          <td className="px-4 py-3 text-sm text-gray-400 whitespace-nowrap">{formatDate(t.created_date || t.created_at, "MMM d, yyyy")}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {/* Pagination */}
+              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-50">
+                <span className="text-sm text-gray-500">Page {currentPage + 1} of {totalPages} • {categoryTx.length} transactions</span>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setTxPage(p => Math.max(0, p - 1))} disabled={currentPage === 0}
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium border transition-all bg-white border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">← Prev</button>
+                  <button onClick={() => setTxPage(p => Math.min(totalPages - 1, p + 1))} disabled={currentPage >= totalPages - 1}
+                    className="px-3 py-1.5 rounded-lg text-sm font-medium border transition-all bg-white border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">Next →</button>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead><tr className="border-b border-gray-100">
-                  {["Member", "Type", "Amount", "Description", "Status", "Date"].map(h => <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">{h}</th>)}
-                </tr></thead>
-                <tbody>
-                  {filteredTransactions.length === 0 ? (
-                    <tr><td colSpan="6" className="text-center py-12 text-gray-400">No transactions found</td></tr>
-                  ) : filteredTransactions.slice(0, 200).map(t => {
-                    const member = members.find(m => m.id === t.member_id);
-                    const isWithdrawal = t.type === "withdrawal";
-                    return (
-                      <tr key={t.id} className="border-b border-gray-50 hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{member?.full_name || "—"} <span className="text-gray-400 text-xs">@{member?.username || ""}</span></td>
-                        <td className="px-4 py-3"><Badge className="bg-gray-100 text-gray-600 capitalize">{t.type?.replace(/_/g, " ")}</Badge></td>
-                        <td className={`px-4 py-3 text-sm font-bold whitespace-nowrap ${isWithdrawal ? "text-red-600" : "text-emerald-600"}`}>{isWithdrawal ? "" : "+"}{money(Math.abs(t.amount || 0))}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600">{t.description || "—"}</td>
-                        <td className="px-4 py-3"><Badge className={t.status === "completed" ? "bg-green-100 text-green-700" : t.status === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}>{t.status}</Badge></td>
-                        <td className="px-4 py-3 text-sm text-gray-400 whitespace-nowrap">{formatDate(t.created_date || t.created_at, "MMM d, yyyy")}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Product Conversion Tab */}
       {tab === "product_conversion" && (
