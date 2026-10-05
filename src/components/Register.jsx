@@ -70,9 +70,9 @@ export default function Register() {
       const { data: newMember, error } = await supabase
         .from("members")
         .insert({
-          username: form.username,
+          username: form.username.trim(),
           password: form.password,
-          full_name: form.username,
+          full_name: form.username.trim(),
           referral_code: generateReferralCode(),
           referrer_id: referrerId,
           status: referrerId ? "pending" : "approved",

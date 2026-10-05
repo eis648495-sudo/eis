@@ -26,7 +26,7 @@ export default function Login() {
       const { data: members, error } = await supabase
         .from("members")
         .select("*")
-        .eq("username", form.username)
+        .ilike("username", form.username.trim())
         .limit(1);
       if (error) throw error;
       const member = members?.[0];
