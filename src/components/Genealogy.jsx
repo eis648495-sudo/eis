@@ -249,9 +249,9 @@ export default function Genealogy({ initialUsername } = {}) {
   }
 
   const handlePointerDown = (e) => {
-    // Let touch gestures scroll naturally; mouse dragging still pans the tree.
-    // Keep button presses out of canvas panning: capture redirects their click.
-    if (e.pointerType === "touch" || e.button !== 0 || e.target.closest("button, a, input, select, textarea, [data-node]")) return;
+    // Mouse and touch both pan the tree via pointer capture.
+    // Keep button presses and node taps out of canvas panning: capture redirects their click.
+    if (e.button !== 0 || e.target.closest("button, a, input, select, textarea, [data-node]")) return;
     setIsDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY };
     panStart.current = { ...pan };
@@ -417,7 +417,7 @@ export default function Genealogy({ initialUsername } = {}) {
           </div>
           <div
             data-genealogy-canvas
-            className="flex-1 min-h-0 overflow-auto p-4 cursor-grab active:cursor-grabbing select-none"
+            className="flex-1 min-h-0 overflow-auto p-4 cursor-grab active:cursor-grabbing select-none touch-none"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
