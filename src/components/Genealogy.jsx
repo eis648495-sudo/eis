@@ -410,7 +410,7 @@ export default function Genealogy() {
             </div>
           </div>
           <div
-            className="flex-1 overflow-hidden p-4 cursor-grab active:cursor-grabbing touch-none select-none"
+            className="flex-1 overflow-auto p-4 cursor-grab active:cursor-grabbing select-none"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
