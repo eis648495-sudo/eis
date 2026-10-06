@@ -63,9 +63,33 @@ export default function Register() {
         return;
       }
       let referrerId = null;
+      let referrerRecord = null;
       if (ref) {
-        const { data: referrer } = await supabase.from("members").select("id").eq("referral_code", ref).limit(1);
-        if (referrer?.[0]) referrerId = referrer[0].id;
+        const { data: referrer } = await supabase.from("members").select("id,tree_level,direct_downlines_count").eq("referral_code", ref).limit(1);
+        if (referrer?.[0]) {
+          referrerId = referrer[0].id;
+          referrerRecord = referrer[0];
+        }
+      }
+      // Auto-place directly under the referrer if they have fewer than 10
+      // direct (1st-level) downlines.  Once the referrer has 10, new members
+      // go to the lobby (pending) for manual placement deeper in the tree.
+      let placementId = null;
+      let newStatus = referrerId ? "pending" : "approved";
+      let treeLevel = 0;
+      let approvedDate = null;
+      if (referrerRecord) {
+        const { count } = await supabase
+          .from("members")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "approved")
+          .or(`placement_id.eq.${referrerId},and(placement_id.is.null,referrer_id.eq.${referrerId})`);
+        if ((count || 0) < 10) {
+          placementId = referrerId;
+          newStatus = "approved";
+          treeLevel = (referrerRecord.tree_level || 0) + 1;
+          approvedDate = new Date().toISOString();
+        }
       }
       const { data: newMember, error } = await supabase
         .from("members")
@@ -75,13 +99,22 @@ export default function Register() {
           full_name: form.username,
           referral_code: generateReferralCode(),
           referrer_id: referrerId,
-          status: referrerId ? "pending" : "approved",
+          placement_id: placementId,
+          status: newStatus,
           role: "member",
-          tree_level: 0,
+          tree_level: treeLevel,
+          approved_date: approvedDate,
         })
         .select()
         .single();
       if (error) throw error;
+      // Increment the referrer's direct downline count when auto-placed
+      if (placementId) {
+        await supabase
+          .from("members")
+          .update({ direct_downlines_count: (referrerRecord.direct_downlines_count || 0) + 1 })
+          .eq("id", referrerId);
+      }
       saveMemberSession(newMember.id);
       toast.success(`Welcome, ${newMember.full_name}!`);
       nav("/Dashboard");
