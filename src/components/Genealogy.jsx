@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { GitBranch, Search, ArrowRight, Users, ZoomIn, ZoomOut, User, Clock, Activity, UserPlus, X, Heart } from "lucide-react";
+import { GitBranch, Search, ArrowRight, ArrowLeft, Users, ZoomIn, ZoomOut, User, Clock, Activity, UserPlus, X, Heart } from "lucide-react";
 import { useTable, useCurrentMember, updateRecord } from "../lib/useData";
 import { Button } from "./ui";
 import { maintenanceStatus, formatTime } from "../lib/helpers";
@@ -99,7 +99,7 @@ export default function Genealogy() {
               (member.username || member.full_name || "").length > 12 ? "text-xs" : "text-sm"
             }`}>{member.username || member.full_name}</span>
             <div className="min-w-8 h-8 px-1.5 rounded-lg bg-white/40 backdrop-blur-sm flex items-center justify-center flex-shrink-0 ring-2 ring-white/50 shadow-md">
-              <span className="text-xs font-extrabold text-white drop-shadow-md tracking-wide">{isRoot ? "You" : `L${level}`}</span>
+              <span className="text-xs font-extrabold text-white drop-shadow-md tracking-wide">{isRoot ? (member.id === currentMember?.id ? "You" : "Root") : `L${level}`}</span>
             </div>
           </div>
 
@@ -185,7 +185,7 @@ export default function Genealogy() {
         )}
       </div>
     );
-  }, [approvedMembers, codes, setSelected, lobbyMembers, setPlacementTarget, maxDepth]);
+  }, [approvedMembers, codes, setSelected, lobbyMembers, setPlacementTarget, maxDepth, currentMember]);
 
   async function handlePlaceMember(lobbyMember) {
     setPlacing(true);
@@ -386,6 +386,14 @@ export default function Genealogy() {
           {/* Zoom controls — sticky below the mobile header so they never scroll under it */}
           <div className="sticky top-16 lg:static z-30 bg-white flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100 rounded-t-2xl">
             <div className="flex items-center gap-2 text-sm text-gray-500">
+              {selected?.id !== currentMember?.id && (
+                <button
+                  onClick={() => { setSelected(currentMember); resetView(); }}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold transition-all shadow-sm"
+                >
+                  <ArrowLeft className="w-4 h-4" /> Back to Me
+                </button>
+              )}
               <Activity className="w-4 h-4" />
               <span>Network tree — <strong className="text-gray-700">{selected?.username || selected?.full_name || "—"}</strong></span>
             </div>
