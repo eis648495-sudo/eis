@@ -386,20 +386,20 @@ export default function Genealogy() {
         {/* Right: Tree visualization — fixed size, never expands with content */}
         <div data-genealogy-frame className="min-w-0 shrink-0 lg:flex-1 h-[calc(100dvh-6rem)] lg:h-[700px] flex flex-col bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
           {/* Controls stay at the top of the frame, outside the scrolling canvas. */}
-          <div data-genealogy-controls className="shrink-0 z-30 bg-white flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100 rounded-t-2xl">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+          <div data-genealogy-controls className="shrink-0 z-30 bg-white flex items-center justify-between gap-2 px-3 sm:px-4 py-3 border-b border-gray-100 rounded-t-2xl">
+            <div className="flex items-center gap-2 text-sm text-gray-500 min-w-0">
               {selected?.id !== currentMember?.id && (
                 <button
                   onClick={() => { setSelected(currentMember); resetView(); }}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold transition-all shadow-sm"
+                  className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold transition-all shadow-sm shrink-0"
                 >
-                  <ArrowLeft className="w-4 h-4" /> Back to Me
+                  <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Back to Me</span>
                 </button>
               )}
-              <Activity className="w-4 h-4" />
-              <span>Network tree — <strong className="text-gray-700">{selected?.username || selected?.full_name || "—"}</strong></span>
+              <Activity className="w-4 h-4 shrink-0" />
+              <span className="truncate">Network tree — <strong className="text-gray-700">{selected?.username || selected?.full_name || "—"}</strong></span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button onClick={() => setZoom(z => z <= 10 ? Math.max(1, z - 1) : Math.max(1, z - 10))} className="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center text-white shadow-lg hover:scale-110 active:scale-95 transition-all">
                 <ZoomOut className="w-5 h-5" />
               </button>
