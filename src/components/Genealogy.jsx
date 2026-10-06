@@ -279,7 +279,7 @@ export default function Genealogy() {
   const resetView = () => { setPan({ x: 0, y: 0 }); setZoom(100); };
 
   return (
-    <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-6 genealogy-scroll">
+    <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-6 genealogy-scroll h-[calc(100dvh-11rem)] overflow-hidden lg:h-auto lg:overflow-visible flex flex-col">
       <style>{`
         html::-webkit-scrollbar { width: 40px !important; }
         html::-webkit-scrollbar-track { background: #e5e7eb !important; border-radius: 20px; }
@@ -339,7 +339,7 @@ export default function Genealogy() {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col lg:flex-row gap-4 flex-1">
         {/* Left: Members list panel */}
         <div className="w-full lg:w-56 flex-shrink-0 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden h-fit lg:sticky lg:top-4">
           <div className="p-3 border-b border-gray-100">
@@ -383,7 +383,7 @@ export default function Genealogy() {
         </div>
 
         {/* Right: Tree visualization — fixed size, never expands with content */}
-        <div className="flex-1 h-[700px] flex flex-col bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="flex-1 min-h-[150px] lg:h-[700px] flex flex-col bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
           {/* Zoom controls — sticky below the mobile header so they never scroll under it */}
           <div className="sticky top-16 lg:static z-30 bg-white flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100 rounded-t-2xl">
             <div className="flex items-center gap-2 text-sm text-gray-500">
