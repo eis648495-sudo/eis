@@ -42,7 +42,7 @@ export default function Genealogy({ initialUsername } = {}) {
 
   const allApproved = useMemo(() => members.filter(m => m.status === "approved"), [members]);
   const lobbyMembers = useMemo(() => members.filter(m => m.status === "pending" && m.referrer_id === currentMember?.id), [members, currentMember?.id]);
-  const isSuperAdmin = currentMember?.username === "supadmin" || currentMember?.username === "admin";
+  const isSuperAdmin = currentMember?.username === "supadmin" || currentMember?.username === "admin" || !!initialUsername;
 
   // Non-super-admin viewers only see their own downline tree — supadmin, admin,
   // and crosslines (members outside their downline lineage) are hidden.

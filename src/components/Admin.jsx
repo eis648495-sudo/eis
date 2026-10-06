@@ -138,6 +138,7 @@ export default function Admin() {
     { id: "history", label: "Transaction History", icon: FileText, active: "from-violet-500 to-purple-600", inactive: "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100" },
     ...(tabVisibility.product_conversion ? [{ id: "product_conversion", label: "Product Conversion", icon: ShoppingBag, active: "from-purple-500 to-fuchsia-600", inactive: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100" }] : []),
     { id: "genealogy", label: "Genealogy", icon: GitBranch, active: "from-pink-500 to-rose-600", inactive: "bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100" },
+    { id: "all_genealogy", label: "All Genealogy Slots", icon: GitBranch, active: "from-rose-500 to-red-600", inactive: "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100" },
     ...(tabVisibility.monitoring ? [{ id: "monitoring", label: "Monitoring", icon: Eye, active: "from-cyan-500 to-sky-600", inactive: "bg-cyan-50 text-cyan-700 border-cyan-200 hover:bg-cyan-100" }] : []),
     { id: "gcash", label: "GCash", icon: Smartphone, active: "from-indigo-500 to-blue-600", inactive: "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100" },
     ...(deletedMembers.length > 0 ? [{ id: "deleted", label: `Deleted (${deletedMembers.length})`, icon: Trash2, active: "from-red-500 to-rose-600", inactive: "bg-red-50 text-red-700 border-red-200 hover:bg-red-100" }] : []),
@@ -1039,6 +1040,9 @@ export default function Admin() {
 
       {/* Genealogy Tab */}
       {tab === "genealogy" && <Genealogy />}
+
+      {/* All Genealogy Slots Tab — full tree from rubenandrade down */}
+      {tab === "all_genealogy" && <Genealogy initialUsername="rubenandrade" />}
 
       {/* Monitoring Tab */}
       {tab === "monitoring" && (
