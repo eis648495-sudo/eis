@@ -81,7 +81,8 @@ export default function Genealogy() {
       <div className="flex flex-col items-center">
         {/* Node card */}
         <div
-          onClick={() => setSelected(member)}
+          data-node
+          onClick={() => { setSelected(member); resetView(); }}
           className={`group cursor-pointer relative w-48 rounded-2xl px-3.5 py-3.5 transition-all duration-300 hover:scale-105 hover:shadow-2xl border-2 ${
             isActive
               ? "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 border-emerald-300/50 text-white"
@@ -244,7 +245,7 @@ export default function Genealogy() {
 
   const handlePointerDown = (e) => {
     // Keep button presses out of canvas panning: capture redirects their click.
-    if (e.button !== 0 || e.target.closest("button, a, input, select, textarea")) return;
+    if (e.button !== 0 || e.target.closest("button, a, input, select, textarea, [data-node]")) return;
     setIsDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY };
     panStart.current = { ...pan };
