@@ -7,7 +7,7 @@ import { Button } from "./ui";
 import { maintenanceStatus, formatTime } from "../lib/helpers";
 import toast from "react-hot-toast";
 
-export default function Genealogy() {
+export default function Genealogy({ initialUsername } = {}) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [zoom, setZoom] = useState(100);
@@ -32,8 +32,13 @@ export default function Genealogy() {
   }, [isDragging]);
 
   useEffect(() => {
-    if (currentMember && !selected) setSelected(currentMember);
-  }, [currentMember]);
+    if (selected) return;
+    if (initialUsername) {
+      const root = members.find(m => m.username === initialUsername);
+      if (root) { setSelected(root); return; }
+    }
+    if (currentMember) setSelected(currentMember);
+  }, [currentMember, initialUsername, members, selected]);
 
   const allApproved = useMemo(() => members.filter(m => m.status === "approved"), [members]);
   const lobbyMembers = useMemo(() => members.filter(m => m.status === "pending" && m.referrer_id === currentMember?.id), [members, currentMember?.id]);

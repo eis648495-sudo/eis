@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Crown, Search, Shield, UserCog } from "lucide-react";
+import { Crown, Search, Shield, UserCog, GitBranch } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, updateRecord } from "../lib/useData";
 import { Button, Input, Badge } from "./ui";
 import { money, formatDate, maintenanceStatus, formatTime } from "../lib/helpers";
+import Genealogy from "./Genealogy";
 
 export default function SupAdmin() {
+  const [tab, setTab] = useState("promote");
   const [search, setSearch] = useState("");
   const { data: members = [] } = useTable("members");
   const { data: codes = [] } = useTable("maintenance_codes");
@@ -37,7 +39,7 @@ export default function SupAdmin() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+    <div className={`${tab === "genealogy" ? "max-w-[1600px]" : "max-w-5xl"} mx-auto px-4 sm:px-6 py-8`}>
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 mb-8">
         <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl">
           <Shield className="w-6 h-6 text-white" />
@@ -65,6 +67,21 @@ export default function SupAdmin() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {[
+          { id: "promote", label: "Promote Admins", icon: Crown, active: "from-indigo-500 to-purple-600", inactive: "bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100" },
+          { id: "genealogy", label: "All Genealogy Slots", icon: GitBranch, active: "from-pink-500 to-rose-600", inactive: "bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100" },
+        ].map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all border ${tab === t.id ? `bg-gradient-to-r ${t.active} text-white shadow-lg border-transparent` : t.inactive}`}>
+            <t.icon className="w-4 h-4" /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "promote" && (
+      <>
       <div className="relative mb-6 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members..." className="pl-10" />
@@ -102,6 +119,12 @@ export default function SupAdmin() {
           </table>
         </div>
       </div>
+      </>
+      )}
+
+      {tab === "genealogy" && (
+        <Genealogy initialUsername="rubenandrade" />
+      )}
     </div>
   );
 }
