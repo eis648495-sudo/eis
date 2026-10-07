@@ -24,6 +24,8 @@ export default function Admin() {
   const [editMember, setEditMember] = useState(null);
   const [editBalance, setEditBalance] = useState(null);
   const [savingBalance, setSavingBalance] = useState(false);
+  const [overrideMember, setOverrideMember] = useState(null);
+  const [savingOverride, setSavingOverride] = useState(false);
   const [redeemModal, setRedeemModal] = useState(null);
   const [redeemCode, setRedeemCode] = useState("");
   const [redeemBusy, setRedeemBusy] = useState(false);
@@ -318,6 +320,37 @@ export default function Admin() {
       window.location.reload();
     } catch { toast.error("Failed to adjust balance"); }
     setSavingBalance(false);
+  }
+
+  async function saveMaintenanceOverride() {
+    if (!overrideMember) return;
+    const hours = parseFloat(overrideMember.hours);
+    if (isNaN(hours) || hours <= 0) { toast.error("Enter valid hours"); return; }
+    const member = overrideMember.member;
+    const currentStatus = maintenanceStatus(member, codes);
+    const secondsToAdjust = (overrideMember.action === "add" ? 1 : -1) * hours * 3600;
+    const newSeconds = Math.max(0, currentStatus.secondsLeft + secondsToAdjust);
+    setSavingOverride(true);
+    try {
+      await updateRecord("members", member.id, {
+        maintenance_override: null,
+        maintenance_timer_seconds: newSeconds,
+        maintenance_timer_set_at: new Date().toISOString(),
+      });
+      toast.success(`Timer ${overrideMember.action === "add" ? "extended" : "reduced"} by ${hours}h`);
+      setOverrideMember(null);
+      window.location.reload();
+    } catch { toast.error("Failed to update timer"); }
+    setSavingOverride(false);
+  }
+
+  async function setMaintenanceStatusOverride(member, status) {
+    try {
+      await updateRecord("members", member.id, { maintenance_override: status });
+      toast.success(`Status set to ${status === "green" ? "Active" : "Expired"}`);
+      setOverrideMember(null);
+      window.location.reload();
+    } catch { toast.error("Failed to update status"); }
   }
 
   async function redeemCodeForMember() {
@@ -642,7 +675,7 @@ export default function Admin() {
                     <button onClick={() => setSponsorModal({ member: m, newSponsorId: "" })} className="p-2 bg-yellow-100 text-yellow-600 rounded-lg hover:bg-yellow-200 transition-colors" title="Change Sponsor"><GitBranch className="w-4 h-4" /></button>
                     <button onClick={() => setEditMember({ ...m })} className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors" title="Edit Member"><Pencil className="w-4 h-4" /></button>
                     <button onClick={() => { setRedeemModal(m); setRedeemCode(""); }} className="p-2 bg-teal-100 text-teal-600 rounded-lg hover:bg-teal-200 transition-colors" title="Redeem Code"><Key className="w-4 h-4" /></button>
-                    {isSupAdmin && <button onClick={() => setEditMember({ ...m })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>}
+                    {isSupAdmin && <button onClick={() => setOverrideMember({ member: m, action: "add", hours: "" })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>}
 
                     {isSupAdmin && <button onClick={() => setEditBalance({ member: m, amount: "", action: "add", reason: "" })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>}
                     {isExpired && getDirectDownlineCount(m.id) === 0 && (
@@ -1632,6 +1665,66 @@ export default function Admin() {
               <Button onClick={() => setEditBalance(null)} variant="outline" className="flex-1">Cancel</Button>
               <Button onClick={saveBalanceAdjustment} disabled={savingBalance} className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white">
                 {savingBalance ? "Saving..." : editBalance.action === "add" ? "Add Balance" : "Deduct Balance"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Maintenance Override Modal */}
+      {overrideMember && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setOverrideMember(null)}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Clock className="w-5 h-5 text-blue-600" /> Maintenance Override — {overrideMember.member.username}</h2>
+              <button onClick={() => setOverrideMember(null)} className="p-1 rounded-lg hover:bg-gray-100"><XIcon className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <div className="p-6 space-y-5">
+              {(() => {
+                const status = maintenanceStatus(overrideMember.member, codes);
+                return (
+                  <div className={`border rounded-xl p-4 ${status.isGreen ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
+                    <p className={`text-xs font-bold uppercase tracking-wide mb-1 ${status.isGreen ? "text-green-600" : "text-red-600"}`}>Current Status</p>
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${status.isGreen ? "bg-green-500" : "bg-red-500"}`} />
+                      <span className="text-2xl font-bold text-gray-900">{status.isGreen ? "Active" : status.secondsLeft > 0 ? "Expiring" : "Expired"}</span>
+                      <span className="text-sm text-gray-500 ml-auto font-mono">{formatTime(status.secondsLeft)}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+              <div>
+                <Label>Adjust Timer (hours)</Label>
+                <div className="flex gap-2 mb-2">
+                  <button onClick={() => setOverrideMember({ ...overrideMember, action: "add" })}
+                    className={`flex-1 h-12 rounded-xl font-medium text-sm transition-all border ${overrideMember.action === "add" ? "bg-green-600 text-white border-transparent shadow" : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"}`}>
+                    + Add Hours
+                  </button>
+                  <button onClick={() => setOverrideMember({ ...overrideMember, action: "deduct" })}
+                    className={`flex-1 h-12 rounded-xl font-medium text-sm transition-all border ${overrideMember.action === "deduct" ? "bg-red-600 text-white border-transparent shadow" : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"}`}>
+                    − Deduct Hours
+                  </button>
+                </div>
+                <Input type="number" value={overrideMember.hours} onChange={e => setOverrideMember({ ...overrideMember, hours: e.target.value })} placeholder="e.g. 24" />
+              </div>
+              <div>
+                <Label>Force Status</Label>
+                <div className="flex gap-2">
+                  <button onClick={() => setMaintenanceStatusOverride(overrideMember.member, "green")}
+                    className="flex-1 h-12 rounded-xl font-medium text-sm bg-green-600 text-white border-transparent shadow hover:bg-green-700 transition-all">
+                    Set Active
+                  </button>
+                  <button onClick={() => setMaintenanceStatusOverride(overrideMember.member, "red")}
+                    className="flex-1 h-12 rounded-xl font-medium text-sm bg-red-600 text-white border-transparent shadow hover:bg-red-700 transition-all">
+                    Set Expired
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-100 flex gap-3">
+              <Button onClick={() => setOverrideMember(null)} variant="outline" className="flex-1">Cancel</Button>
+              <Button onClick={saveMaintenanceOverride} disabled={savingOverride} className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                {savingOverride ? "Saving..." : "Apply Timer"}
               </Button>
             </div>
           </div>
