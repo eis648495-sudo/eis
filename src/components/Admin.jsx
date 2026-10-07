@@ -22,6 +22,8 @@ export default function Admin() {
   const [showPasswords, setShowPasswords] = useState(false);
 
   const [editMember, setEditMember] = useState(null);
+  const [editBalance, setEditBalance] = useState(null);
+  const [savingBalance, setSavingBalance] = useState(false);
   const [redeemModal, setRedeemModal] = useState(null);
   const [redeemCode, setRedeemCode] = useState("");
   const [redeemBusy, setRedeemBusy] = useState(false);
@@ -299,6 +301,27 @@ export default function Admin() {
       setEditMember(null);
       window.location.reload();
     } catch { toast.error("Failed to update credentials"); }
+  }
+
+  async function saveBalanceAdjustment() {
+    if (!editBalance) return;
+    const amount = parseFloat(editBalance.amount);
+    if (isNaN(amount) || amount <= 0) { toast.error("Enter a valid amount"); return; }
+    const signedAmount = editBalance.action === "add" ? amount : -amount;
+    setSavingBalance(true);
+    try {
+      await createRecord("transactions", {
+        member_id: editBalance.member.id,
+        type: "adjustment",
+        amount: signedAmount,
+        status: "completed",
+        description: editBalance.reason || `Balance ${editBalance.action === "add" ? "added" : "deducted"} by admin`,
+      });
+      toast.success(`Balance ${editBalance.action === "add" ? "added" : "deducted"} successfully`);
+      setEditBalance(null);
+      window.location.reload();
+    } catch { toast.error("Failed to adjust balance"); }
+    setSavingBalance(false);
   }
 
   async function redeemCodeForMember() {
@@ -625,7 +648,7 @@ export default function Admin() {
                     <button onClick={() => { setRedeemModal(m); setRedeemCode(""); }} className="p-2 bg-teal-100 text-teal-600 rounded-lg hover:bg-teal-200 transition-colors" title="Redeem Code"><Key className="w-4 h-4" /></button>
                     {isSupAdmin && <button onClick={() => setEditMember({ ...m })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>}
 
-                    {isSupAdmin && <button onClick={() => setEditMember({ ...m })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>}
+                    {isSupAdmin && <button onClick={() => setEditBalance({ member: m, amount: "", action: "add", reason: "" })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>}
                     {isExpired && getDirectDownlineCount(m.id) === 0 && (
                       <button onClick={() => setConfirmDelete({ type: "member", id: m.id, name: m.full_name || m.username })} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Delete Account"><Trash2 className="w-4 h-4" /></button>
                     )}
@@ -1565,6 +1588,56 @@ export default function Admin() {
                 <Button onClick={() => setEditMember(null)} variant="outline" className="flex-1">Cancel</Button>
                 <Button onClick={saveEditMember} className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white">Save Changes</Button>
               </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Balance Modal */}
+      {editBalance && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditBalance(null)}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><Wallet className="w-5 h-5 text-green-600" /> Edit Balance — {editBalance.member.username}</h2>
+              <button onClick={() => setEditBalance(null)} className="p-1 rounded-lg hover:bg-gray-100"><XIcon className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                <p className="text-xs font-bold text-green-600 uppercase tracking-wide mb-1">Current Balance</p>
+                <p className="text-2xl font-bold text-gray-900">{money(getMemberBalance(editBalance.member.id))}</p>
+              </div>
+              <div>
+                <Label>Action</Label>
+                <div className="flex gap-2">
+                  <button onClick={() => setEditBalance({ ...editBalance, action: "add" })}
+                    className={`flex-1 h-12 rounded-xl font-medium text-sm transition-all border ${editBalance.action === "add" ? "bg-green-600 text-white border-transparent shadow" : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"}`}>
+                    + Add Balance
+                  </button>
+                  <button onClick={() => setEditBalance({ ...editBalance, action: "deduct" })}
+                    className={`flex-1 h-12 rounded-xl font-medium text-sm transition-all border ${editBalance.action === "deduct" ? "bg-red-600 text-white border-transparent shadow" : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"}`}>
+                    − Deduct Balance
+                  </button>
+                </div>
+              </div>
+              <div>
+                <Label>Amount (₱)</Label>
+                <Input type="number" value={editBalance.amount} onChange={e => setEditBalance({ ...editBalance, amount: e.target.value })} placeholder="0.00" />
+              </div>
+              <div>
+                <Label>Reason (optional)</Label>
+                <Input value={editBalance.reason} onChange={e => setEditBalance({ ...editBalance, reason: e.target.value })} placeholder="e.g. Manual correction" />
+              </div>
+              {editBalance.amount && parseFloat(editBalance.amount) > 0 && (
+                <div className={`rounded-xl p-3 text-sm font-medium ${editBalance.action === "add" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+                  {editBalance.action === "add" ? "+" : "−"}{money(parseFloat(editBalance.amount))} → New balance: {money(getMemberBalance(editBalance.member.id) + (editBalance.action === "add" ? 1 : -1) * parseFloat(editBalance.amount))}
+                </div>
+              )}
+            </div>
+            <div className="p-6 border-t border-gray-100 flex gap-3">
+              <Button onClick={() => setEditBalance(null)} variant="outline" className="flex-1">Cancel</Button>
+              <Button onClick={saveBalanceAdjustment} disabled={savingBalance} className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white">
+                {savingBalance ? "Saving..." : editBalance.action === "add" ? "Add Balance" : "Deduct Balance"}
+              </Button>
+            </div>
           </div>
         </div>
       )}
