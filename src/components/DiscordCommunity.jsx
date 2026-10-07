@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { MessageCircle, ExternalLink, AlertCircle, RefreshCw, Link2, Hash } from "lucide-react";
 
@@ -14,6 +14,14 @@ export default function DiscordCommunity() {
   const [reloadKey, setReloadKey] = useState(0);
 
   const hasConfig = !!serverId;
+
+  // Fallback: if onLoad doesn't fire within 8s, show the iframe anyway
+  useEffect(() => {
+    if (!hasConfig) return;
+    setLoaded(false);
+    const t = setTimeout(() => setLoaded(true), 8000);
+    return () => clearTimeout(t);
+  }, [reloadKey, hasConfig]);
 
   function connect() {
     const id = idInput.trim();
@@ -125,11 +133,10 @@ export default function DiscordCommunity() {
                 src={widgetUrl}
                 title="Discord Community"
                 onLoad={() => setLoaded(true)}
-                onError={() => setErrored(true)}
-                className={`w-full transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0 absolute"} h-[600px] border-0`}
+                className={`w-full transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"} h-[600px] border-0`}
                 allowtransparency="true"
                 frameBorder="0"
-                sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"
+                allow="popups"
               />
             </>
           )}
