@@ -3,8 +3,10 @@ import { motion } from "framer-motion";
 import { MessageCircle, ExternalLink, AlertCircle, RefreshCw, Link2, Hash } from "lucide-react";
 
 export default function DiscordCommunity() {
-  const [serverId, setServerId] = useState(() => localStorage.getItem("discord_server_id") || "");
-  const [inviteUrl, setInviteUrl] = useState(() => localStorage.getItem("discord_invite_url") || "");
+  const DEFAULT_SERVER_ID = "1550154796152127580";
+  const DEFAULT_INVITE_URL = "https://discord.gg/Va4M8g6uJ";
+  const [serverId, setServerId] = useState(() => localStorage.getItem("discord_server_id") || DEFAULT_SERVER_ID);
+  const [inviteUrl, setInviteUrl] = useState(() => localStorage.getItem("discord_invite_url") || DEFAULT_INVITE_URL);
   const [idInput, setIdInput] = useState(serverId);
   const [urlInput, setUrlInput] = useState(inviteUrl);
   const [loaded, setLoaded] = useState(false);
