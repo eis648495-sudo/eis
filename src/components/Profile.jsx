@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { User, ArrowRight, Copy, Check, Save } from "lucide-react";
+import { User, ArrowRight, Copy, Check, Save, MessageCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, useCurrentMember, updateRecord } from "../lib/useData";
 import { Button, Input, Label } from "./ui";
@@ -179,6 +179,25 @@ export default function Profile() {
         <div>
           <Label className="text-white">New Password</Label>
           <Input value={form.password} onChange={update("password")} type="password" placeholder="Leave blank to keep current password" className="bg-white border-gray-300 text-gray-900 placeholder-gray-400" />
+        </div>
+      </motion.div>
+
+      {/* Discord community card */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+        className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl shadow-lg p-6 mb-6">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center flex-shrink-0">
+            <MessageCircle className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-white">Join our Community</h2>
+            <p className="text-sm text-indigo-100">Chat with members on Discord</p>
+          </div>
+          <Link to="/DiscordCommunity">
+            <Button className="bg-white text-indigo-600 hover:bg-indigo-50 font-bold">
+              Open <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
+          </Link>
         </div>
       </motion.div>
 

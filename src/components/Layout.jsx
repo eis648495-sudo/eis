@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { LayoutDashboard, GitBranch, Users, Wallet, Layers, User, Shield, Crown, LogOut, Menu, X, ChevronRight } from "lucide-react";
+import { LayoutDashboard, GitBranch, Users, Wallet, Layers, User, Shield, Crown, LogOut, Menu, X, ChevronRight, MessageCircle } from "lucide-react";
 import { useTable, useCurrentMember } from "../lib/useData";
 import { clearMemberSession, getSessionMemberId } from "../lib/auth";
 import { supabase } from "../lib/supabase";
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { name: "Total Withdrawal", icon: Wallet, path: "Earnings" },
   { name: "Mamlakah ComPlan", icon: Layers, path: "LevelBonuses" },
   { name: "My Profile", icon: User, path: "Profile" },
+  { name: "Community", icon: MessageCircle, path: "DiscordCommunity" },
 ];
 const ADMIN_ITEMS = [{ name: "Admin Panel", icon: Shield, path: "Admin" }];
 const SUBADMIN_ITEMS = [{ name: "Sub-Admin Panel", icon: Shield, path: "SubAdmin" }];

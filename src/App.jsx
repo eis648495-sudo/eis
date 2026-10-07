@@ -15,9 +15,10 @@ import Profile from "./components/Profile";
 import Admin from "./components/Admin";
 import SubAdmin from "./components/SubAdmin";
 import SupAdmin from "./components/SupAdmin";
+import DiscordCommunity from "./components/DiscordCommunity";
 
 const PAGES = {
-  Dashboard, Genealogy, Earnings, Monitoring, LevelBonuses, Profile, Admin, SubAdmin, SupAdmin,
+  Dashboard, Genealogy, Earnings, Monitoring, LevelBonuses, Profile, Admin, SubAdmin, SupAdmin, DiscordCommunity,
 };
 
 function PageRouter() {
