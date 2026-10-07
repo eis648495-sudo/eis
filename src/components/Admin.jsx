@@ -161,12 +161,8 @@ export default function Admin() {
   // Compute actual withdrawable balance from transactions (same logic as Dashboard)
   function getMemberBalance(memberId) {
     const txns = transactions.filter(t => t.member_id === memberId);
-    const lastWithdrawal = txns
-      .filter(t => (t.type === "withdrawal" || t.type === "product_conversion") && t.status === "completed")
-      .sort((a, b) => new Date(b.created_date || b.created_at) - new Date(a.created_date || a.created_at))[0];
-    const lastWDate = lastWithdrawal ? new Date(lastWithdrawal.created_date || lastWithdrawal.created_at) : null;
     return txns
-      .filter(t => ["level_bonus", "referral_bonus", "adjustment"].includes(t.type) && (!lastWDate || new Date(t.created_date || t.created_at) > lastWDate))
+      .filter(t => ["level_bonus", "referral_bonus", "adjustment", "withdrawal", "product_conversion"].includes(t.type) && t.status === "completed")
       .reduce((sum, t) => sum + Number(t.amount || 0), 0);
   }
 
