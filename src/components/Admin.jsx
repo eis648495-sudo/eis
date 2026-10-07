@@ -111,7 +111,7 @@ export default function Admin() {
   const canManageTabs = isSupAdmin || isOwner;
   const activeMembers = members.filter(m => {
     if (m.status === "deleted") return false;
-    if (!isSupAdmin && (m.username === "supadmin" || m.username === "admin")) return false;
+    if (!(isSupAdmin || isOwner) && (m.username === "supadmin" || m.username === "admin")) return false;
     return true;
   });
   const deletedMembers = members.filter(m => m.status === "deleted");
@@ -675,9 +675,9 @@ export default function Admin() {
                     <button onClick={() => setSponsorModal({ member: m, newSponsorId: "" })} className="p-2 bg-yellow-100 text-yellow-600 rounded-lg hover:bg-yellow-200 transition-colors" title="Change Sponsor"><GitBranch className="w-4 h-4" /></button>
                     <button onClick={() => setEditMember({ ...m })} className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors" title="Edit Member"><Pencil className="w-4 h-4" /></button>
                     <button onClick={() => { setRedeemModal(m); setRedeemCode(""); }} className="p-2 bg-teal-100 text-teal-600 rounded-lg hover:bg-teal-200 transition-colors" title="Redeem Code"><Key className="w-4 h-4" /></button>
-                    {isSupAdmin && <button onClick={() => setOverrideMember({ member: m, action: "add", hours: "" })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>}
+                    {(isSupAdmin || isOwner) && <button onClick={() => setOverrideMember({ member: m, action: "add", hours: "" })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>}
 
-                    {isSupAdmin && <button onClick={() => setEditBalance({ member: m, amount: "", action: "add", reason: "" })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>}
+                    {(isSupAdmin || isOwner) && <button onClick={() => setEditBalance({ member: m, amount: "", action: "add", reason: "" })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>}
                     {isExpired && getDirectDownlineCount(m.id) === 0 && (
                       <button onClick={() => setConfirmDelete({ type: "member", id: m.id, name: m.full_name || m.username })} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Delete Account"><Trash2 className="w-4 h-4" /></button>
                     )}
