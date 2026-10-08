@@ -255,6 +255,15 @@ export default function StorePanel() {
     return allActiveMembers.filter(m => (m.username || "").toLowerCase().includes(query));
   }, [allActiveMembers, genUserSearch]);
 
+  // Exact match check — when typed text matches a username, highlight it blue
+  const genExactMatch = useMemo(() => {
+    if (!genUserSearch) return null;
+    return allActiveMembers.find(m => m.username.toLowerCase() === genUserSearch.toLowerCase()) || null;
+  }, [genUserSearch, allActiveMembers]);
+
+  // Disable Generate if user typed text but hasn't clicked a dropdown item
+  const genUnconfirmed = !!genUserSearch && !genUsername;
+
   async function handleGenerate() {
     const count = parseInt(genCount) || 1;
     if (count < 1) { toast.error("Enter a valid count"); return; }
@@ -455,7 +464,7 @@ export default function StorePanel() {
                   type="text"
                   aria-label="Search designated username"
                   value={genUserSearch}
-                  onChange={e => { setGenUserSearch(e.target.value); setGenUserOpen(true); }}
+                  onChange={e => { setGenUserSearch(e.target.value); setGenUsername(""); setGenUserOpen(true); }}
                   onFocus={() => setGenUserOpen(true)}
                   onBlur={() => setTimeout(() => setGenUserOpen(false), 200)}
                   placeholder="Search username..."
@@ -477,7 +486,7 @@ export default function StorePanel() {
                           key={m.id}
                           type="button"
                           onClick={() => { setGenUsername(m.username); setGenUserOpen(false); setGenUserSearch(""); }}
-                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${genUsername === m.username ? "bg-amber-50 text-amber-900 font-medium" : "text-gray-700 hover:bg-gray-50"}`}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${genExactMatch && genExactMatch.username === m.username ? "bg-blue-100 text-blue-900 font-bold" : genUsername === m.username ? "bg-amber-50 text-amber-900 font-medium" : "text-gray-700 hover:bg-gray-50"}`}
                         >
                           @{m.username}
                         </button>
@@ -489,11 +498,14 @@ export default function StorePanel() {
                 </div>
               )}
             </div>
-            <button onClick={handleGenerate} disabled={genBusy || remainingCount <= 0}
+            <button onClick={handleGenerate} disabled={genBusy || remainingCount <= 0 || genUnconfirmed}
               className="h-11 px-6 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold transition-colors disabled:opacity-40 disabled:pointer-events-none">
               {genBusy ? "Generating..." : "Generate"}
             </button>
           </div>
+          {genUnconfirmed && (
+            <p className="text-sm text-orange-500 mt-3">Click a username from the dropdown to confirm before generating.</p>
+          )}
           {remainingCount <= 0 && (
             <p className="text-sm text-red-500 mt-3">No codes remaining in your allotment. Ask admin to allot more codes.</p>
           )}
