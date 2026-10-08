@@ -875,9 +875,18 @@ export default function Admin() {
         </div>
       )}
 
-      {/* Store Tab — actual Store Panel embedded for admin access */}
+      {/* Store Tab — allot codes to stores + actual Store Panel for admin access */}
       {tab === "store" && (
-        <StorePanel />
+        <div className="space-y-6">
+          <AdminStoreTab
+            members={members}
+            codes={codes}
+            refetchCodes={refetchCodes}
+            currentAdminUsername={members.find(m => m.id === currentMemberId)?.username}
+            onRemoveStore={(id) => setRole(id, "member")}
+          />
+          <StorePanel />
+        </div>
       )}
 
       {/* Withdrawals Tab */}
