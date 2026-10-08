@@ -109,12 +109,12 @@ export default function Admin() {
   const currentMemberId = getSessionMemberId();
   const isSupAdmin = members.find(m => m.id === currentMemberId)?.username === "supadmin";
   const isOwner = members.find(m => m.id === currentMemberId)?.username === "admin";
-  const isRubenAndrade = members.find(m => m.id === currentMemberId)?.username === "rubenandrade";
+  const isRubenAndrade = (members.find(m => m.id === currentMemberId)?.username || "").toLowerCase() === "rubenandrade";
   const canManageTabs = isSupAdmin || isOwner;
   const activeMembers = members.filter(m => {
     if (m.status === "deleted") return false;
     if (!(isSupAdmin || isOwner) && (m.username === "supadmin" || m.username === "admin")) return false;
-    if (isRubenAndrade && m.username === "testing") return false;
+    if (isRubenAndrade && (m.username || "").toLowerCase() === "testing") return false;
     return true;
   });
   const deletedMembers = members.filter(m => m.status === "deleted");
