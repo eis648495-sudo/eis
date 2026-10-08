@@ -15,6 +15,7 @@ import { money, formatDate, generateReferralCode, maintenanceStatus, formatTime,
 import { Button, Input, Label, Badge } from "./ui";
 import Genealogy from "./Genealogy";
 import MonitoringView from "./MonitoringView";
+import AdminStoreTab from "./AdminStoreTab";
 
 export default function Admin() {
   const [tab, setTab] = useState("members");
@@ -138,6 +139,7 @@ export default function Admin() {
     { id: "members", label: `Members (${activeMembers.length})`, icon: Users, active: "from-amber-500 to-orange-600", inactive: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
     { id: "pending", label: `Pending Placements${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ""}`, icon: Clock, active: "from-yellow-500 to-amber-600", inactive: "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100" },
     { id: "codes", label: "Codes", icon: Ticket, active: "from-teal-500 to-emerald-600", inactive: "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100" },
+    { id: "store", label: "Store", icon: Store, active: "from-green-500 to-emerald-600", inactive: "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" },
     { id: "withdrawals", label: `Withdrawals${pendingWithdrawals.length > 0 ? ` (${pendingWithdrawals.length})` : ""}`, icon: Wallet, active: "from-blue-500 to-indigo-600", inactive: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
     { id: "history", label: "Transaction History", icon: FileText, active: "from-violet-500 to-purple-600", inactive: "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100" },
     ...(tabVisibility.product_conversion ? [{ id: "product_conversion", label: "Product Conversion", icon: ShoppingBag, active: "from-purple-500 to-fuchsia-600", inactive: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100" }] : []),
@@ -867,6 +869,17 @@ export default function Admin() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Store Tab */}
+      {tab === "store" && (
+        <AdminStoreTab
+          members={members}
+          codes={codes}
+          refetchCodes={refetchCodes}
+          currentAdminUsername={members.find(m => m.id === currentMemberId)?.username}
+          onRemoveStore={(id) => setRole(id, "member")}
+        />
       )}
 
       {/* Withdrawals Tab */}
