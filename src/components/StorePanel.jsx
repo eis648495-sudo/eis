@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Eye, Calendar, Sparkles, KeyRound, CheckCircle2, Search,
-  ChevronLeft, ChevronRight, Copy, Store as StoreIcon, Clock, Loader2,
+  ChevronLeft, ChevronRight, ChevronDown, Copy, Store as StoreIcon, Clock, Loader2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, useCurrentMember } from "../lib/useData";
@@ -55,7 +55,21 @@ export default function StorePanel() {
   const [genCount, setGenCount] = useState("1");
   const [genUsername, setGenUsername] = useState("");
   const [genUserSearch, setGenUserSearch] = useState("");
+  const [genUserOpen, setGenUserOpen] = useState(false);
   const [genBusy, setGenBusy] = useState(false);
+  const genUserRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (genUserRef.current && !genUserRef.current.contains(e.target)) {
+        setGenUserOpen(false);
+      }
+    }
+    if (genUserOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [genUserOpen]);
   const [availSearch, setAvailSearch] = useState("");
   const [myCodesSearch, setMyCodesSearch] = useState("");
   const [weeklyFilterUser, setWeeklyFilterUser] = useState("");
@@ -430,31 +444,64 @@ export default function StorePanel() {
               <input type="number" value={genCount} onChange={e => setGenCount(e.target.value)} min="1"
                 className="w-full h-11 rounded-xl border border-gray-200 px-4 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20" />
             </div>
-            <div>
+            <div className="relative" ref={genUserRef}>
               <label className="text-sm font-medium text-gray-600 mb-1.5 block">Designate to username</label>
-              <div className="relative mb-1.5">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={genUserSearch}
-                  onChange={e => setGenUserSearch(e.target.value)}
-                  placeholder="Filter usernames..."
-                  className="w-full h-9 rounded-lg border border-gray-200 pl-9 pr-3 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white text-sm"
-                />
-              </div>
-              <select value={genUsername} onChange={e => setGenUsername(e.target.value)}
-                className="w-full h-11 rounded-xl border border-gray-200 px-4 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white">
-                <option value="">No one (unassigned)</option>
-                {approvedMembers
-                  .filter(m => {
-                    if (!genUserSearch) return true;
-                    const q = genUserSearch.toLowerCase();
-                    return (m.username || "").toLowerCase().includes(q) || (m.full_name || "").toLowerCase().includes(q);
-                  })
-                  .map(m => (
-                    <option key={m.id} value={m.username}>@{m.username}</option>
-                  ))}
-              </select>
+              <button
+                type="button"
+                onClick={() => setGenUserOpen(o => !o)}
+                className="w-full h-11 rounded-xl border border-gray-200 px-4 flex items-center justify-between outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white text-sm"
+              >
+                <span className={genUsername ? "text-gray-900 font-medium" : "text-gray-400"}>
+                  {genUsername ? `@${genUsername}` : "Select a username"}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${genUserOpen ? "rotate-180" : ""}`} />
+              </button>
+              {genUserOpen && (
+                <div className="absolute z-20 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+                  <div className="relative p-2 border-b border-gray-100">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={genUserSearch}
+                      onChange={e => setGenUserSearch(e.target.value)}
+                      placeholder="Search..."
+                      autoFocus
+                      className="w-full h-9 rounded-lg border border-gray-200 pl-9 pr-3 outline-none focus:border-green-500 bg-gray-50 text-sm"
+                    />
+                  </div>
+                  <div className="max-h-56 overflow-y-auto">
+                    <button
+                      type="button"
+                      onClick={() => { setGenUsername(""); setGenUserOpen(false); setGenUserSearch(""); }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                    >
+                      No one (unassigned)
+                    </button>
+                    {approvedMembers
+                      .filter(m => {
+                        if (!genUserSearch) return true;
+                        const q = genUserSearch.toLowerCase();
+                        return (m.username || "").toLowerCase().includes(q) || (m.full_name || "").toLowerCase().includes(q);
+                      })
+                      .map(m => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => { setGenUsername(m.username); setGenUserOpen(false); setGenUserSearch(""); }}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${genUsername === m.username ? "bg-green-50 text-green-700 font-medium" : "text-gray-700 hover:bg-gray-50"}`}
+                        >
+                          @{m.username}
+                        </button>
+                      ))}
+                    {genUserSearch && approvedMembers.filter(m => {
+                      const q = genUserSearch.toLowerCase();
+                      return (m.username || "").toLowerCase().includes(q) || (m.full_name || "").toLowerCase().includes(q);
+                    }).length === 0 && (
+                      <p className="px-4 py-3 text-sm text-gray-400">No users found</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <button onClick={handleGenerate} disabled={genBusy || remainingCount <= 0}
               className="h-11 px-6 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold transition-colors disabled:opacity-40 disabled:pointer-events-none">
