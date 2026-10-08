@@ -157,7 +157,8 @@ insert into public.system_settings (setting_key, setting_value) values
   ('tab_monitoring_visible', 'true'),
   ('tab_subadmin_visible', 'true'),
   ('tab_terms_visible', 'true'),
-  ('tab_complan_visible', 'true')
+  ('tab_complan_visible', 'true'),
+  ('tab_store_cabinet_visible', 'true')
 on conflict (setting_key) do nothing;
 
 -- ========== CREATE AN ADMIN ACCOUNT ==========

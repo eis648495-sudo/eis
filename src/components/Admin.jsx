@@ -45,7 +45,7 @@ export default function Admin() {
   const [txSearch, setTxSearch] = useState("");
   const [txCategory, setTxCategory] = useState("all");
   const [txPage, setTxPage] = useState(0);
-  const [tabVisibility, setTabVisibility] = useState({ monitoring: true, subadmin: true, terms: true, complan: true, product_conversion: true });
+  const [tabVisibility, setTabVisibility] = useState({ monitoring: true, subadmin: true, terms: true, complan: true, product_conversion: true, store_cabinet: true });
   const [monitorMember, setMonitorMember] = useState(null);
   const [previewReceipt, setPreviewReceipt] = useState(null);
   const [signedUrls, setSignedUrls] = useState({});
@@ -73,6 +73,7 @@ export default function Admin() {
       terms: map.tab_terms_visible !== "false",
       complan: map.tab_complan_visible !== "false",
       product_conversion: map.tab_product_conversion_visible !== "false",
+      store_cabinet: map.tab_store_cabinet_visible !== "false",
     });
     const minSetting = settings.find(s => s.setting_key === "withdrawal_minimum_amount");
     if (minSetting) setMinAmount(minSetting.setting_value);
@@ -1457,6 +1458,7 @@ export default function Admin() {
                 ...(canManageTabs ? [{ key: "monitoring", label: "Downline Monitoring" }] : []),
                 ...(canManageTabs ? [{ key: "subadmin", label: "Sub-Admins" }] : []),
                 ...(canManageTabs ? [{ key: "product_conversion", label: "Product Conversion" }] : []),
+                ...(canManageTabs ? [{ key: "store_cabinet", label: "Store Panel & Code Cabinet" }] : []),
                 { key: "terms", label: "Terms & Conditions" },
                 { key: "complan", label: "Mamlakah ComPlan" },
               ].map(t => (

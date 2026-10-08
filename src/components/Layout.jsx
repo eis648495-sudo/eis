@@ -53,6 +53,7 @@ export default function Layout({ children, currentPageName }) {
   const showMonitoring = settingsMap.tab_monitoring_visible !== "false";
   const showSubAdmin = settingsMap.tab_subadmin_visible !== "false";
   const showComPlan = settingsMap.tab_complan_visible !== "false";
+  const showStoreCabinet = settingsMap.tab_store_cabinet_visible !== "false";
 
   const isAdmin = member?.role === "admin";
   const isSubAdmin = member?.role === "sub_admin";
@@ -62,12 +63,13 @@ export default function Layout({ children, currentPageName }) {
   let items = NAV_ITEMS.filter(item => {
     if (item.path === "Monitoring") return showMonitoring;
     if (item.path === "LevelBonuses") return showComPlan;
+    if (item.path === "CodeCabinet") return showStoreCabinet;
     return true;
   });
   if (isAdmin || isSupAdmin) items = [...items, ...ADMIN_ITEMS];
   if (isSubAdmin && showSubAdmin) items = [...items, ...SUBADMIN_ITEMS];
   if (isSupAdmin) items = [...items, ...SUPADMIN_ITEMS];
-  if (isStore) items = [...items, ...STORE_ITEMS];
+  if (isStore && showStoreCabinet) items = [...items, ...STORE_ITEMS];
 
   function handleLogout() {
     clearMemberSession();
