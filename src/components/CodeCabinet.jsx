@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { useTable, useCurrentMember } from "../lib/useData";
 import { supabase } from "../lib/supabase";
 import { formatDate, maintenanceStatus, LEVEL_CONFIG, MAX_BONUS_LEVEL } from "../lib/helpers";
+import CodeTransactionHistory from "./CodeTransactionHistory";
 
 const DAY_NAMES = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
@@ -61,6 +62,7 @@ export default function CodeCabinet() {
 
   const { data: members = [] } = useTable("members");
   const { data: allCodes = [], refetch: refetchCodes } = useTable("maintenance_codes");
+  const { data: transactions = [] } = useTable("transactions");
   const { currentMember } = useCurrentMember(members);
 
   // Tick clock every second
@@ -376,11 +378,14 @@ export default function CodeCabinet() {
               <p className="text-gray-400 text-sm">No redeemed codes yet.</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {redeemedCodes.map(c => (
-                <div key={c.id} className="flex items-center justify-between bg-gray-100 rounded-xl px-4 py-3">
-                  <code className="font-mono text-sm font-bold text-gray-400">{c.code}</code>
-                  <span className="text-xs text-gray-400">{formatDate(c.used_at, "MMM d, yyyy h:mm a")}</span>
+                <div key={c.id} className="bg-gray-100 rounded-xl px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <code className="font-mono text-sm font-bold text-gray-400">{c.code}</code>
+                    <span className="text-xs text-gray-400">{formatDate(c.used_at, "MMM d, yyyy h:mm a")}</span>
+                  </div>
+                  <CodeTransactionHistory code={c.code} transactions={transactions} />
                 </div>
               ))}
             </div>
