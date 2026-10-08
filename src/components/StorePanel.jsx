@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Eye, Calendar, Sparkles, KeyRound, CheckCircle2, Search,
-  ChevronLeft, ChevronRight, ChevronDown, Copy, Store as StoreIcon, Clock, Loader2,
+  ChevronLeft, ChevronRight, X, Copy, Store as StoreIcon, Clock, Loader2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, useCurrentMember } from "../lib/useData";
@@ -57,19 +57,7 @@ export default function StorePanel() {
   const [genUserSearch, setGenUserSearch] = useState("");
   const [genUserOpen, setGenUserOpen] = useState(false);
   const [genBusy, setGenBusy] = useState(false);
-  const genUserRef = useRef(null);
 
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (genUserRef.current && !genUserRef.current.contains(e.target)) {
-        setGenUserOpen(false);
-      }
-    }
-    if (genUserOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [genUserOpen]);
   const [availSearch, setAvailSearch] = useState("");
   const [myCodesSearch, setMyCodesSearch] = useState("");
   const [weeklyFilterUser, setWeeklyFilterUser] = useState("");
@@ -262,6 +250,10 @@ export default function StorePanel() {
 
   // All non-deleted members for the "Designate to username" dropdown
   const allActiveMembers = useMemo(() => members.filter(m => m.status !== "deleted"), [members]);
+  const filteredGenMembers = useMemo(() => {
+    const query = genUserSearch.toLowerCase();
+    return allActiveMembers.filter(m => (m.username || "").toLowerCase().includes(query));
+  }, [allActiveMembers, genUserSearch]);
 
   async function handleGenerate() {
     const count = parseInt(genCount) || 1;
@@ -433,7 +425,7 @@ export default function StorePanel() {
 
       {/* Generate Codes */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="bg-white rounded-2xl shadow-lg border border-gray-100 mb-6 overflow-hidden">
+        className="relative z-30 bg-white rounded-2xl shadow-lg border border-gray-100 mb-6">
         <div className="p-5 border-b border-gray-100 flex items-center gap-3">
           <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
             <Sparkles className="w-5 h-5 text-green-500" />
@@ -447,31 +439,31 @@ export default function StorePanel() {
               <input type="number" value={genCount} onChange={e => setGenCount(e.target.value)} min="1"
                 className="w-full h-11 rounded-xl border border-gray-200 px-4 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20" />
             </div>
-            <div className="relative" ref={genUserRef}>
+            <div className="relative">
               <label className="text-sm font-medium text-gray-600 mb-1.5 block">Designate to username</label>
-              <button
-                type="button"
-                onClick={() => setGenUserOpen(o => !o)}
-                className="w-full h-11 rounded-xl border border-gray-200 px-4 flex items-center justify-between outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white text-sm"
-              >
-                <span className={genUsername ? "text-gray-900 font-medium" : "text-gray-400"}>
-                  {genUsername ? `@${genUsername}` : "Select a username"}
-                </span>
-                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${genUserOpen ? "rotate-180" : ""}`} />
-              </button>
+              {genUsername && !genUserOpen ? (
+                <div className="flex items-center justify-between w-full h-11 rounded-xl border border-gray-200 px-4 bg-white">
+                  <span className="text-sm font-medium text-gray-900">@{genUsername}</span>
+                  <button type="button" aria-label="Clear designated username"
+                    onClick={() => { setGenUsername(""); setGenUserSearch(""); setGenUserOpen(true); }}
+                    className="text-gray-400 hover:text-red-500">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  aria-label="Search designated username"
+                  value={genUserSearch}
+                  onChange={e => { setGenUserSearch(e.target.value); setGenUserOpen(true); }}
+                  onFocus={() => setGenUserOpen(true)}
+                  onBlur={() => setTimeout(() => setGenUserOpen(false), 200)}
+                  placeholder="Search username..."
+                  className="w-full h-11 rounded-xl border border-gray-200 px-4 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white text-sm"
+                />
+              )}
               {genUserOpen && (
                 <div className="absolute z-20 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
-                  <div className="relative p-2 border-b border-gray-100">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      value={genUserSearch}
-                      onChange={e => setGenUserSearch(e.target.value)}
-                      placeholder="Search..."
-                      autoFocus
-                      className="w-full h-9 rounded-lg border border-gray-200 pl-9 pr-3 outline-none focus:border-green-500 bg-gray-50 text-sm"
-                    />
-                  </div>
                   <div className="max-h-56 overflow-y-auto">
                     <button
                       type="button"
@@ -480,13 +472,7 @@ export default function StorePanel() {
                     >
                       No one (unassigned)
                     </button>
-                    {allActiveMembers
-                      .filter(m => {
-                        if (!genUserSearch) return true;
-                        const q = genUserSearch.toLowerCase();
-                        return (m.username || "").toLowerCase().includes(q) || (m.full_name || "").toLowerCase().includes(q);
-                      })
-                      .map(m => (
+                    {filteredGenMembers.map(m => (
                         <button
                           key={m.id}
                           type="button"
@@ -496,10 +482,7 @@ export default function StorePanel() {
                           @{m.username}
                         </button>
                       ))}
-                    {genUserSearch && allActiveMembers.filter(m => {
-                      const q = genUserSearch.toLowerCase();
-                      return (m.username || "").toLowerCase().includes(q) || (m.full_name || "").toLowerCase().includes(q);
-                    }).length === 0 && (
+                    {genUserSearch && filteredGenMembers.length === 0 && (
                       <p className="px-4 py-3 text-sm text-gray-400">No users found</p>
                     )}
                   </div>
