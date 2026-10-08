@@ -5,7 +5,7 @@ import {
   Eye, EyeOff, DollarSign, Trash2, RotateCcw, UserCog, GitBranch, Search,
   Download, Copy, Crown, ArrowRight, ChevronDown, X as XIcon, FileText,
   Key, Clock, Lock, Pencil, User, Save, Upload, Image as ImageIcon,
-  UserPlus, ArrowLeft, ShoppingBag,
+  UserPlus, ArrowLeft, ShoppingBag, Store,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, updateRecord, createRecord, deleteRecord } from "../lib/useData";
@@ -1266,8 +1266,10 @@ export default function Admin() {
                       <div className="flex gap-1">
                         {m.role !== "admin" && <Button onClick={() => setRole(m.id, "admin")} size="sm" className="bg-purple-600 text-white h-8 px-3 text-xs"><Crown className="w-3 h-3 mr-1" /> Make Admin</Button>}
                         {m.role === "admin" && <Button onClick={() => setRole(m.id, "member")} size="sm" variant="outline" className="border-purple-200 text-purple-600 hover:bg-purple-50 h-8 px-3 text-xs">Remove Admin</Button>}
-                        {m.role !== "sub_admin" && m.role !== "admin" && <Button onClick={() => setRole(m.id, "sub_admin")} size="sm" className="bg-amber-500 text-white h-8 px-3 text-xs"><Shield className="w-3 h-3 mr-1" /> Make Sub-Admin</Button>}
+                        {m.role !== "sub_admin" && m.role !== "admin" && m.role !== "store" && <Button onClick={() => setRole(m.id, "sub_admin")} size="sm" className="bg-amber-500 text-white h-8 px-3 text-xs"><Shield className="w-3 h-3 mr-1" /> Make Sub-Admin</Button>}
                         {m.role === "sub_admin" && <Button onClick={() => setRole(m.id, "member")} size="sm" variant="outline" className="border-amber-200 text-amber-600 hover:bg-amber-50 h-8 px-3 text-xs">Remove Sub-Admin</Button>}
+                        {m.role !== "store" && m.role !== "admin" && <Button onClick={() => setRole(m.id, "store")} size="sm" className="bg-green-600 text-white h-8 px-3 text-xs"><Store className="w-3 h-3 mr-1" /> Make Store</Button>}
+                        {m.role === "store" && <Button onClick={() => setRole(m.id, "member")} size="sm" variant="outline" className="border-green-200 text-green-600 hover:bg-green-50 h-8 px-3 text-xs">Remove Store</Button>}
                       </div>
                     </td>
                   </tr>
