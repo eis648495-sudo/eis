@@ -260,6 +260,9 @@ export default function StorePanel() {
   // Approved members for the "Designate to username" dropdown
   const approvedMembers = useMemo(() => members.filter(m => m.status === "approved"), [members]);
 
+  // All non-deleted members for the "Designate to username" dropdown
+  const allActiveMembers = useMemo(() => members.filter(m => m.status !== "deleted"), [members]);
+
   async function handleGenerate() {
     const count = parseInt(genCount) || 1;
     if (count < 1) { toast.error("Enter a valid count"); return; }
@@ -477,7 +480,7 @@ export default function StorePanel() {
                     >
                       No one (unassigned)
                     </button>
-                    {approvedMembers
+                    {allActiveMembers
                       .filter(m => {
                         if (!genUserSearch) return true;
                         const q = genUserSearch.toLowerCase();
@@ -488,12 +491,12 @@ export default function StorePanel() {
                           key={m.id}
                           type="button"
                           onClick={() => { setGenUsername(m.username); setGenUserOpen(false); setGenUserSearch(""); }}
-                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${genUsername === m.username ? "bg-green-50 text-green-700 font-medium" : "text-gray-700 hover:bg-gray-50"}`}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${genUsername === m.username ? "bg-amber-50 text-amber-900 font-medium" : "text-gray-700 hover:bg-gray-50"}`}
                         >
                           @{m.username}
                         </button>
                       ))}
-                    {genUserSearch && approvedMembers.filter(m => {
+                    {genUserSearch && allActiveMembers.filter(m => {
                       const q = genUserSearch.toLowerCase();
                       return (m.username || "").toLowerCase().includes(q) || (m.full_name || "").toLowerCase().includes(q);
                     }).length === 0 && (
