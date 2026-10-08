@@ -433,10 +433,10 @@ export default function StorePanel() {
           </div>
           <h2 className="text-lg font-bold text-gray-900">Codes Added by Admin</h2>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[440px] overflow-y-auto">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200">
+            <thead className="sticky top-0 z-10">
+              <tr className="border-b border-gray-200 bg-gray-50">
                 <th className="text-left py-2.5 px-5 font-semibold text-gray-500 uppercase text-xs">Date</th>
                 <th className="text-left py-2.5 px-5 font-semibold text-gray-500 uppercase text-xs">Codes Added</th>
               </tr>
@@ -568,10 +568,10 @@ export default function StorePanel() {
           </div>
         </div>
         <div className="p-5">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[440px] overflow-y-auto">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200">
+              <thead className="sticky top-0 z-10">
+                <tr className="border-b border-gray-200 bg-gray-50">
                   <th className="text-left py-2 px-3 font-semibold text-gray-500 uppercase text-xs">User</th>
                   {DAY_NAMES.map((day, i) => {
                     const date = new Date(weekStart);
@@ -647,7 +647,7 @@ export default function StorePanel() {
               <p className="text-gray-400 text-sm">No available codes. Generate codes with a designated username to see them here.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[440px] overflow-y-auto">
               {availableCodes.map(c => {
                 const isRedeemed = c.is_used;
                 const unlockSecs = getUnlockSeconds(c);
@@ -724,10 +724,10 @@ export default function StorePanel() {
               <p className="text-gray-400 text-sm">No codes generated yet. Use the Generate Codes section above to create codes.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[440px] overflow-y-auto">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200">
+                <thead className="sticky top-0 z-10">
+                  <tr className="border-b border-gray-200 bg-gray-50">
                     <th className="text-left py-2.5 px-3 font-semibold text-gray-500 uppercase text-xs">Code</th>
                     <th className="text-left py-2.5 px-3 font-semibold text-gray-500 uppercase text-xs">Designated To</th>
                     <th className="text-left py-2.5 px-3 font-semibold text-gray-500 uppercase text-xs">Status</th>

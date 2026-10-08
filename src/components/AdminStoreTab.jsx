@@ -162,10 +162,10 @@ export default function AdminStoreTab({ members, codes, refetchCodes, currentAdm
             ))}
           </select>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[440px] overflow-y-auto">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200">
+            <thead className="sticky top-0 z-10">
+              <tr className="border-b border-gray-200 bg-gray-50">
                 <th className={tableThClass}>Store</th>
                 <th className={tableThClass}>Allotted</th>
                 <th className={tableThClass}>Generated</th>
@@ -224,10 +224,10 @@ export default function AdminStoreTab({ members, codes, refetchCodes, currentAdm
             ))}
           </select>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[440px] overflow-y-auto">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200">
+            <thead className="sticky top-0 z-10">
+              <tr className="border-b border-gray-200 bg-gray-50">
                 <th className={tableThClass}>Date</th>
                 <th className={tableThClass}>Store</th>
                 <th className={tableThClass}>Codes Added</th>
@@ -268,10 +268,10 @@ export default function AdminStoreTab({ members, codes, refetchCodes, currentAdm
             ))}
           </select>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[440px] overflow-y-auto">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200">
+            <thead className="sticky top-0 z-10">
+              <tr className="border-b border-gray-200 bg-gray-50">
                 <th className={tableThClass}>Store</th>
                 <th className={tableThClass}>Code</th>
                 <th className={tableThClass}>Designated To</th>
