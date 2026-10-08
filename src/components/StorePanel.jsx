@@ -471,7 +471,7 @@ export default function StorePanel() {
               )}
               {genUserOpen && (
                 <div className="absolute z-40 bottom-full mb-1 w-full bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
-                  <div className="max-h-56 overflow-y-auto">
+                  <div className="max-h-[400px] overflow-y-auto">
                     <button
                       type="button"
                       onClick={() => { setGenUsername(""); setGenUserOpen(false); setGenUserSearch(""); }}
