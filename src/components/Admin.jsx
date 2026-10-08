@@ -5,7 +5,7 @@ import {
   Eye, EyeOff, DollarSign, Trash2, RotateCcw, UserCog, GitBranch, Search,
   Download, Copy, Crown, ArrowRight, ChevronDown, X as XIcon, FileText,
   Key, Clock, Lock, Pencil, User, Save, Upload, Image as ImageIcon,
-  UserPlus, ArrowLeft, ShoppingBag,
+  UserPlus, ArrowLeft, ShoppingBag, Store,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, updateRecord, createRecord, deleteRecord } from "../lib/useData";
@@ -15,6 +15,8 @@ import { money, formatDate, generateReferralCode, maintenanceStatus, formatTime,
 import { Button, Input, Label, Badge } from "./ui";
 import Genealogy from "./Genealogy";
 import MonitoringView from "./MonitoringView";
+import AdminStoreTab from "./AdminStoreTab";
+import StorePanel from "./StorePanel";
 
 export default function Admin() {
   const [tab, setTab] = useState("members");
@@ -44,7 +46,7 @@ export default function Admin() {
   const [txSearch, setTxSearch] = useState("");
   const [txCategory, setTxCategory] = useState("all");
   const [txPage, setTxPage] = useState(0);
-  const [tabVisibility, setTabVisibility] = useState({ monitoring: true, subadmin: true, terms: true, complan: true, product_conversion: true });
+  const [tabVisibility, setTabVisibility] = useState({ monitoring: true, subadmin: true, terms: true, complan: true, product_conversion: true, store_cabinet: true });
   const [monitorMember, setMonitorMember] = useState(null);
   const [previewReceipt, setPreviewReceipt] = useState(null);
   const [signedUrls, setSignedUrls] = useState({});
@@ -54,6 +56,7 @@ export default function Admin() {
   const [transferCodeCount, setTransferCodeCount] = useState("1");
   const [transferring, setTransferring] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [autoRedeem, setAutoRedeem] = useState(false);
 
   const { data: members = [] } = useTable("members");
   const { data: codes = [], refetch: refetchCodes } = useTable("maintenance_codes");
@@ -72,9 +75,11 @@ export default function Admin() {
       terms: map.tab_terms_visible !== "false",
       complan: map.tab_complan_visible !== "false",
       product_conversion: map.tab_product_conversion_visible !== "false",
+      store_cabinet: map.tab_store_cabinet_visible !== "false",
     });
     const minSetting = settings.find(s => s.setting_key === "withdrawal_minimum_amount");
     if (minSetting) setMinAmount(minSetting.setting_value);
+    setAutoRedeem(map.auto_redeem_enabled === "true");
   }, [settings]);
 
   // Live countdown — re-render every second so maintenance timers tick down
@@ -108,10 +113,12 @@ export default function Admin() {
   const currentMemberId = getSessionMemberId();
   const isSupAdmin = members.find(m => m.id === currentMemberId)?.username === "supadmin";
   const isOwner = members.find(m => m.id === currentMemberId)?.username === "admin";
+  const isRubenAndrade = (members.find(m => m.id === currentMemberId)?.username || "").toLowerCase() === "rubenandrade";
   const canManageTabs = isSupAdmin || isOwner;
   const activeMembers = members.filter(m => {
     if (m.status === "deleted") return false;
     if (!(isSupAdmin || isOwner) && (m.username === "supadmin" || m.username === "admin")) return false;
+    if (isRubenAndrade && (m.username || "").toLowerCase() === "testing") return false;
     return true;
   });
   const deletedMembers = members.filter(m => m.status === "deleted");
@@ -138,6 +145,7 @@ export default function Admin() {
     { id: "members", label: `Members (${activeMembers.length})`, icon: Users, active: "from-amber-500 to-orange-600", inactive: "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100" },
     { id: "pending", label: `Pending Placements${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ""}`, icon: Clock, active: "from-yellow-500 to-amber-600", inactive: "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100" },
     { id: "codes", label: "Codes", icon: Ticket, active: "from-teal-500 to-emerald-600", inactive: "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100" },
+    { id: "store", label: "Store", icon: Store, active: "from-green-500 to-emerald-600", inactive: "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" },
     { id: "withdrawals", label: `Withdrawals${pendingWithdrawals.length > 0 ? ` (${pendingWithdrawals.length})` : ""}`, icon: Wallet, active: "from-blue-500 to-indigo-600", inactive: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" },
     { id: "history", label: "Transaction History", icon: FileText, active: "from-violet-500 to-purple-600", inactive: "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100" },
     ...(tabVisibility.product_conversion ? [{ id: "product_conversion", label: "Product Conversion", icon: ShoppingBag, active: "from-purple-500 to-fuchsia-600", inactive: "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100" }] : []),
@@ -530,6 +538,17 @@ export default function Admin() {
     setSavingMin(false);
   }
 
+  async function toggleAutoRedeem() {
+    const newVal = !autoRedeem;
+    setAutoRedeem(newVal);
+    try {
+      const existing = settings.find(s => s.setting_key === "auto_redeem_enabled");
+      if (existing) await updateRecord("system_settings", existing.id, { setting_value: String(newVal) });
+      else await createRecord("system_settings", { setting_key: "auto_redeem_enabled", setting_value: String(newVal) });
+      toast.success(`Auto-redeem ${newVal ? "enabled" : "disabled"}`);
+    } catch { toast.error("Failed to update"); setAutoRedeem(!newVal); }
+  }
+
   async function toggleTab(key) {
     const settingKey = `tab_${key}_visible`;
     const newVal = !tabVisibility[key];
@@ -866,6 +885,20 @@ export default function Admin() {
               </table>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Store Tab — allot codes to stores + actual Store Panel for admin access */}
+      {tab === "store" && (
+        <div className="space-y-6">
+          <AdminStoreTab
+            members={members}
+            codes={codes}
+            refetchCodes={refetchCodes}
+            currentAdminUsername={members.find(m => m.id === currentMemberId)?.username}
+            onRemoveStore={(id) => setRole(id, "member")}
+          />
+          <StorePanel />
         </div>
       )}
 
@@ -1266,8 +1299,10 @@ export default function Admin() {
                       <div className="flex gap-1">
                         {m.role !== "admin" && <Button onClick={() => setRole(m.id, "admin")} size="sm" className="bg-purple-600 text-white h-8 px-3 text-xs"><Crown className="w-3 h-3 mr-1" /> Make Admin</Button>}
                         {m.role === "admin" && <Button onClick={() => setRole(m.id, "member")} size="sm" variant="outline" className="border-purple-200 text-purple-600 hover:bg-purple-50 h-8 px-3 text-xs">Remove Admin</Button>}
-                        {m.role !== "sub_admin" && m.role !== "admin" && <Button onClick={() => setRole(m.id, "sub_admin")} size="sm" className="bg-amber-500 text-white h-8 px-3 text-xs"><Shield className="w-3 h-3 mr-1" /> Make Sub-Admin</Button>}
+                        {m.role !== "sub_admin" && m.role !== "admin" && m.role !== "store" && <Button onClick={() => setRole(m.id, "sub_admin")} size="sm" className="bg-amber-500 text-white h-8 px-3 text-xs"><Shield className="w-3 h-3 mr-1" /> Make Sub-Admin</Button>}
                         {m.role === "sub_admin" && <Button onClick={() => setRole(m.id, "member")} size="sm" variant="outline" className="border-amber-200 text-amber-600 hover:bg-amber-50 h-8 px-3 text-xs">Remove Sub-Admin</Button>}
+                        {m.role !== "store" && m.role !== "admin" && <Button onClick={() => setRole(m.id, "store")} size="sm" className="bg-green-600 text-white h-8 px-3 text-xs"><Store className="w-3 h-3 mr-1" /> Make Store</Button>}
+                        {m.role === "store" && <Button onClick={() => setRole(m.id, "member")} size="sm" variant="outline" className="border-green-200 text-green-600 hover:bg-green-50 h-8 px-3 text-xs">Remove Store</Button>}
                       </div>
                     </td>
                   </tr>
@@ -1433,6 +1468,21 @@ export default function Admin() {
               <Button onClick={saveMinAmount} disabled={savingMin} className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">Save</Button>
             </div>
           </div>
+          {canManageTabs && (
+            <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Key className="w-5 h-5 text-teal-500" /> Auto-Redeem Codes</h2>
+              <div className="flex items-center justify-between p-3 rounded-xl border border-gray-100">
+                <div>
+                  <span className="font-medium text-gray-700">Auto-redeem unlocked codes</span>
+                  <p className="text-sm text-gray-500">When enabled, codes designated to members are automatically redeemed once the 10-hour unlock timer expires.</p>
+                </div>
+                <button onClick={toggleAutoRedeem}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${autoRedeem ? "bg-green-500" : "bg-gray-300"}`}>
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${autoRedeem ? "translate-x-6" : "translate-x-0.5"}`} />
+                </button>
+              </div>
+            </div>
+          )}
           <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Settings className="w-5 h-5 text-gray-500" /> Sidebar Tab Visibility</h2>
             <div className="space-y-3">
@@ -1440,6 +1490,7 @@ export default function Admin() {
                 ...(canManageTabs ? [{ key: "monitoring", label: "Downline Monitoring" }] : []),
                 ...(canManageTabs ? [{ key: "subadmin", label: "Sub-Admins" }] : []),
                 ...(canManageTabs ? [{ key: "product_conversion", label: "Product Conversion" }] : []),
+                ...(canManageTabs ? [{ key: "store_cabinet", label: "Store Panel & Code Cabinet" }] : []),
                 { key: "terms", label: "Terms & Conditions" },
                 { key: "complan", label: "Mamlakah ComPlan" },
               ].map(t => (

@@ -11,13 +11,15 @@ import Genealogy from "./components/Genealogy";
 import Earnings from "./components/Earnings";
 import Monitoring from "./components/Monitoring";
 import LevelBonuses from "./components/LevelBonuses";
+import CodeCabinet from "./components/CodeCabinet";
+import StorePanel from "./components/StorePanel";
 import Profile from "./components/Profile";
 import Admin from "./components/Admin";
 import SubAdmin from "./components/SubAdmin";
 import SupAdmin from "./components/SupAdmin";
 
 const PAGES = {
-  Dashboard, Genealogy, Earnings, Monitoring, LevelBonuses, Profile, Admin, SubAdmin, SupAdmin,
+  Dashboard, Genealogy, Earnings, Monitoring, LevelBonuses, CodeCabinet, StorePanel, Profile, Admin, SubAdmin, SupAdmin,
 };
 
 function PageRouter() {
