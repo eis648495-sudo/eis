@@ -16,6 +16,7 @@ import { Button, Input, Label, Badge } from "./ui";
 import Genealogy from "./Genealogy";
 import MonitoringView from "./MonitoringView";
 import AdminStoreTab from "./AdminStoreTab";
+import StorePanel from "./StorePanel";
 
 export default function Admin() {
   const [tab, setTab] = useState("members");
@@ -874,15 +875,9 @@ export default function Admin() {
         </div>
       )}
 
-      {/* Store Tab */}
+      {/* Store Tab — actual Store Panel embedded for admin access */}
       {tab === "store" && (
-        <AdminStoreTab
-          members={members}
-          codes={codes}
-          refetchCodes={refetchCodes}
-          currentAdminUsername={members.find(m => m.id === currentMemberId)?.username}
-          onRemoveStore={(id) => setRole(id, "member")}
-        />
+        <StorePanel />
       )}
 
       {/* Withdrawals Tab */}
