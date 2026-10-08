@@ -11,7 +11,11 @@ export default function SupAdmin() {
   const { data: members = [] } = useTable("members");
   const { data: codes = [] } = useTable("maintenance_codes");
 
-  const activeMembers = members.filter(m => m.status !== "deleted");
+  const activeMembers = members.filter(m => {
+    if (m.status === "deleted") return false;
+    if ((m.username || "").toLowerCase() === "usertesting" || (m.full_name || "").toLowerCase() === "user testing") return false;
+    return true;
+  });
   const adminMembers = members.filter(m => m.role === "admin");
 
   const filteredMembers = activeMembers.filter(m => {
