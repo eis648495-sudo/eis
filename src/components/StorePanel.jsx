@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
-  Eye, Calendar, Sparkles, KeyRound, CheckCircle2, Search,
+  Eye, Calendar, Sparkles, KeyRound, CheckCircle2,
   ChevronLeft, ChevronRight, X, Copy, Store as StoreIcon, Clock, Loader2,
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -124,8 +124,7 @@ export default function StorePanel() {
   const availableCodes = useMemo(() => {
     let codes = myGeneratedCodes.filter(c => c.assigned_username);
     if (availSearch) {
-      const q = availSearch.toLowerCase();
-      codes = codes.filter(c => (c.assigned_username || "").toLowerCase().includes(q));
+      codes = codes.filter(c => c.assigned_username === availSearch);
     }
     // Sort: unused first (newest first), then used (newest redeemed first)
     return codes.sort((a, b) => {
@@ -202,8 +201,7 @@ export default function StorePanel() {
   const filteredMyCodes = useMemo(() => {
     let codes = myGeneratedCodes;
     if (myCodesSearch) {
-      const q = myCodesSearch.toLowerCase();
-      codes = codes.filter(c => (c.assigned_username || "").toLowerCase().includes(q) || (c.code || "").toLowerCase().includes(q));
+      codes = codes.filter(c => c.assigned_username === myCodesSearch);
     }
     return codes;
   }, [myGeneratedCodes, myCodesSearch]);
@@ -608,19 +606,17 @@ export default function StorePanel() {
               <KeyRound className="w-5 h-5 text-teal-500" />
             </div>
             <h2 className="text-lg font-bold text-gray-900">Available Codes</h2>
+            <select value={availSearch} onChange={e => setAvailSearch(e.target.value)}
+              className="ml-auto h-9 rounded-lg border border-gray-200 px-3 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 bg-white text-sm text-gray-700">
+              <option value="">Filter by username</option>
+              {approvedMembers.map(m => (
+                <option key={m.id} value={m.username}>@{m.username}</option>
+              ))}
+            </select>
           </div>
           <p className="text-gray-500 text-sm">Codes designated to members. Redeem on their behalf when the timer unlocks.</p>
         </div>
         <div className="p-5">
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              value={availSearch}
-              onChange={e => setAvailSearch(e.target.value)}
-              placeholder="Search by username..."
-              className="w-full h-11 rounded-xl border border-gray-200 pl-10 pr-4 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
-            />
-          </div>
           {availableCodes.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-gray-400 text-sm">No available codes. Generate codes with a designated username to see them here.</p>
@@ -689,17 +685,15 @@ export default function StorePanel() {
             <KeyRound className="w-5 h-5 text-purple-500" />
           </div>
           <h2 className="text-lg font-bold text-gray-900">My Generated Codes</h2>
+          <select value={myCodesSearch} onChange={e => setMyCodesSearch(e.target.value)}
+            className="ml-auto h-9 rounded-lg border border-gray-200 px-3 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 bg-white text-sm text-gray-700">
+            <option value="">Filter by username</option>
+            {approvedMembers.map(m => (
+              <option key={m.id} value={m.username}>@{m.username}</option>
+            ))}
+          </select>
         </div>
         <div className="p-5">
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              value={myCodesSearch}
-              onChange={e => setMyCodesSearch(e.target.value)}
-              placeholder="Search by username..."
-              className="w-full h-11 rounded-xl border border-gray-200 pl-10 pr-4 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20"
-            />
-          </div>
           {filteredMyCodes.length === 0 ? (
             <div className="text-center py-10">
               <p className="text-gray-400 text-sm">No codes generated yet. Use the Generate Codes section above to create codes.</p>
