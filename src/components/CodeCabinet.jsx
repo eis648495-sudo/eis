@@ -63,7 +63,10 @@ export default function CodeCabinet() {
   const { data: members = [] } = useTable("members");
   const { data: allCodes = [], refetch: refetchCodes } = useTable("maintenance_codes");
   const { data: transactions = [] } = useTable("transactions");
+  const { data: settings = [] } = useTable("system_settings");
   const { currentMember } = useCurrentMember(members);
+
+  const autoRedeemSetting = settings.find(s => s.setting_key === "auto_redeem_enabled")?.setting_value === "true";
 
   // Tick clock every second
   useEffect(() => {
@@ -186,7 +189,7 @@ export default function CodeCabinet() {
   const needed = Math.max(0, weeklyTarget - weeklyTotal);
 
   // Auto-redeem next time (placeholder display)
-  const autoRedeemEnabled = availableCodes.length > 0;
+  const autoRedeemEnabled = autoRedeemSetting && availableCodes.length > 0;
   const nextRedeemText = autoRedeemEnabled
     ? `Tomorrow at 5:52 PM (Philippine Standard Time) · ${availableCodes.length} code${availableCodes.length !== 1 ? "s" : ""} queued`
     : "No codes queued";
@@ -233,7 +236,8 @@ export default function CodeCabinet() {
         </motion.div>
       </div>
 
-      {/* Auto-Redeem section */}
+      {/* Auto-Redeem section — only shown when auto_redeem_enabled is on */}
+      {autoRedeemSetting && (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
         className="bg-white rounded-2xl shadow-lg border border-gray-100 mb-8 overflow-hidden">
         <div className="p-5 border-b border-gray-100 flex items-center gap-3">
@@ -257,6 +261,7 @@ export default function CodeCabinet() {
           </div>
         </div>
       </motion.div>
+      )}
 
       {/* My Weekly Redeemed Codes section */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
