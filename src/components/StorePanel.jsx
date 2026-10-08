@@ -463,7 +463,7 @@ export default function StorePanel() {
                 />
               )}
               {genUserOpen && (
-                <div className="absolute z-20 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+                <div className="absolute z-40 bottom-full mb-1 w-full bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
                   <div className="max-h-56 overflow-y-auto">
                     <button
                       type="button"
