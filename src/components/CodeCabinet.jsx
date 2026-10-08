@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Ticket, KeyRound, CheckCircle2, Zap, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Ticket, KeyRound, CheckCircle2, Zap, Calendar, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 import { useTable, useCurrentMember } from "../lib/useData";
-import { formatDate } from "../lib/helpers";
+import { supabase } from "../lib/supabase";
+import { formatDate, maintenanceStatus, LEVEL_CONFIG, MAX_BONUS_LEVEL } from "../lib/helpers";
 
 const DAY_NAMES = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
@@ -55,9 +57,10 @@ export default function CodeCabinet() {
   const [weekOffset, setWeekOffset] = useState(0); // 0 = this week, -1 = last week, etc.
   const [phTime, setPhTime] = useState(getPhilippineTime());
   const [weekCountdown, setWeekCountdown] = useState(getTimeUntilWeekEnd());
+  const [redeemingId, setRedeemingId] = useState(null);
 
   const { data: members = [] } = useTable("members");
-  const { data: allCodes = [] } = useTable("maintenance_codes");
+  const { data: allCodes = [], refetch: refetchCodes } = useTable("maintenance_codes");
   const { currentMember } = useCurrentMember(members);
 
   // Tick clock every second
@@ -68,6 +71,70 @@ export default function CodeCabinet() {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  async function handleRedeem(codeRecord) {
+    setRedeemingId(codeRecord.id);
+    try {
+      // Mark code as used
+      await supabase
+        .from("maintenance_codes")
+        .update({
+          is_used: true,
+          used_by_member_id: currentMember.id,
+          used_at: new Date().toISOString(),
+        })
+        .eq("id", codeRecord.id);
+      // Record redemption as a transaction
+      await supabase.from("transactions").insert({
+        member_id: currentMember.id,
+        type: "maintenance_code",
+        amount: 0,
+        description: `Redeemed maintenance code: ${codeRecord.code}`,
+        status: "completed",
+      });
+      // Fetch fresh data so upline maintenance status is accurate
+      const { data: freshMembers } = await supabase.from("members").select("*");
+      const { data: freshCodes } = await supabase.from("maintenance_codes").select("*");
+      const freshMember = (freshMembers || members).find(m => m.id === currentMember.id);
+      if (freshMember && freshMember.status !== "approved") {
+        toast.success("Code redeemed. You must be placed under an upline before commissions are distributed.");
+      } else {
+        await distributeUplineBonuses(currentMember, freshMembers || members, freshCodes || allCodes);
+        toast.success("Code redeemed successfully! Upline bonuses distributed.");
+      }
+      refetchCodes();
+    } catch (err) {
+      toast.error(err.message || "Failed to redeem code");
+    }
+    setRedeemingId(null);
+  }
+
+  async function distributeUplineBonuses(member, allMembers, allCodesData) {
+    const canEarn = (m) => {
+      if (!m || m.status !== "approved") return false;
+      return maintenanceStatus(m, allCodesData).isGreen;
+    };
+    let current = member;
+    for (let level = 1; level <= MAX_BONUS_LEVEL; level++) {
+      const upline = allMembers.find(m => m.id === current.referrer_id);
+      if (!upline) break;
+      if (canEarn(upline)) {
+        const bonus = LEVEL_CONFIG.find(l => l.level === level)?.bonus_amount || 0;
+        if (bonus > 0) {
+          await supabase.from("transactions").insert({
+            member_id: upline.id,
+            type: "referral_bonus",
+            amount: bonus,
+            bonus_level: level,
+            description: `Level ${level} bonus from ${member.username}`,
+            status: "completed",
+            from_member_id: member.id,
+          });
+        }
+      }
+      current = upline;
+    }
+  }
 
   const availableCodes = useMemo(
     () => allCodes.filter(c => !c.is_used && c.assigned_username === currentMember?.username),
@@ -264,8 +331,8 @@ export default function CodeCabinet() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
         className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="p-5 border-b border-gray-100 flex items-center gap-3">
-          <div className="w-10 h-10 bg-teal-50 rounded-xl flex items-center justify-center">
-            <KeyRound className="w-5 h-5 text-teal-500" />
+          <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+            <KeyRound className="w-5 h-5 text-blue-500" />
           </div>
           <h2 className="text-lg font-bold text-gray-900">Available Codes</h2>
         </div>
@@ -277,9 +344,43 @@ export default function CodeCabinet() {
           ) : (
             <div className="space-y-2">
               {availableCodes.map(c => (
-                <div key={c.id} className="flex items-center justify-between bg-teal-50 rounded-xl px-4 py-3">
-                  <code className="font-mono text-sm font-bold text-gray-900">{c.code}</code>
-                  <span className="text-xs text-gray-500">Assigned to you</span>
+                <div key={c.id} className="flex items-center justify-between bg-blue-50 rounded-xl px-4 py-3">
+                  <code className="font-mono text-sm font-bold text-blue-700">{c.code}</code>
+                  <button
+                    onClick={() => handleRedeem(c)}
+                    disabled={redeemingId === c.id}
+                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    {redeemingId === c.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
+                    {redeemingId === c.id ? "Redeeming..." : "Redeem"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Redeemed Codes section */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+        className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="p-5 border-b border-gray-100 flex items-center gap-3">
+          <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
+            <CheckCircle2 className="w-5 h-5 text-gray-400" />
+          </div>
+          <h2 className="text-lg font-bold text-gray-900">Redeemed Codes</h2>
+        </div>
+        <div className="p-5">
+          {redeemedCodes.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-gray-400 text-sm">No redeemed codes yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {redeemedCodes.map(c => (
+                <div key={c.id} className="flex items-center justify-between bg-gray-100 rounded-xl px-4 py-3">
+                  <code className="font-mono text-sm font-bold text-gray-400">{c.code}</code>
+                  <span className="text-xs text-gray-400">{formatDate(c.used_at, "MMM d, yyyy h:mm a")}</span>
                 </div>
               ))}
             </div>
