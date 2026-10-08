@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Eye, Calendar, Sparkles, KeyRound, CheckCircle2, Search,
-  ChevronLeft, ChevronRight, Copy, Store as StoreIcon, Clock, Loader2,
+  ChevronLeft, ChevronRight, Copy, Store as StoreIcon, Clock, Loader2, X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTable, useCurrentMember } from "../lib/useData";
@@ -54,6 +54,8 @@ export default function StorePanel() {
   const [usernameSearch, setUsernameSearch] = useState("");
   const [genCount, setGenCount] = useState("1");
   const [genUsername, setGenUsername] = useState("");
+  const [genUserSearch, setGenUserSearch] = useState("");
+  const [genUserOpen, setGenUserOpen] = useState(false);
   const [genBusy, setGenBusy] = useState(false);
   const [availSearch, setAvailSearch] = useState("");
   const [myCodesSearch, setMyCodesSearch] = useState("");
@@ -429,15 +431,60 @@ export default function StorePanel() {
               <input type="number" value={genCount} onChange={e => setGenCount(e.target.value)} min="1"
                 className="w-full h-11 rounded-xl border border-gray-200 px-4 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20" />
             </div>
-            <div>
+            <div className="relative">
               <label className="text-sm font-medium text-gray-600 mb-1.5 block">Designate to username</label>
-              <select value={genUsername} onChange={e => setGenUsername(e.target.value)}
-                className="w-full h-11 rounded-xl border border-gray-200 px-4 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white">
-                <option value="">No one (unassigned)</option>
-                {approvedMembers.map(m => (
-                  <option key={m.id} value={m.username}>@{m.username}</option>
-                ))}
-              </select>
+              {genUsername && !genUserOpen ? (
+                <div className="flex items-center justify-between w-full h-11 rounded-xl border border-gray-200 px-4 bg-white">
+                  <span className="text-sm font-medium text-gray-900">@{genUsername}</span>
+                  <button type="button" onClick={() => { setGenUsername(""); setGenUserSearch(""); setGenUserOpen(true); }}
+                    className="text-gray-400 hover:text-red-500">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={genUserSearch}
+                  onChange={e => { setGenUserSearch(e.target.value); setGenUserOpen(true); setGenUsername(""); }}
+                  onFocus={() => setGenUserOpen(true)}
+                  onBlur={() => setTimeout(() => setGenUserOpen(false), 200)}
+                  placeholder="Type a username to search..."
+                  className="w-full h-11 rounded-xl border border-gray-200 px-4 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/20 bg-white text-sm"
+                />
+              )}
+              {genUserOpen && (
+                <div className="absolute z-10 mt-1 w-full max-h-60 overflow-y-auto bg-white rounded-xl border border-gray-200 shadow-lg">
+                  <button type="button"
+                    onClick={() => { setGenUsername(""); setGenUserSearch(""); setGenUserOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${!genUsername ? "font-medium text-gray-500" : "text-gray-600"}`}>
+                    No one (unassigned)
+                  </button>
+                  {approvedMembers
+                    .filter(m => {
+                      if (!genUserSearch) return true;
+                      const q = genUserSearch.toLowerCase();
+                      return (m.username || "").toLowerCase().includes(q) || (m.full_name || "").toLowerCase().includes(q);
+                    })
+                    .slice(0, 50)
+                    .map(m => {
+                      const isExactMatch = genUserSearch && m.username.toLowerCase() === genUserSearch.toLowerCase();
+                      return (
+                        <button key={m.id} type="button"
+                          onClick={() => { setGenUsername(m.username); setGenUserSearch(""); setGenUserOpen(false); }}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${isExactMatch ? "bg-green-100 text-green-700 font-bold" : "text-gray-700 hover:bg-gray-50"}`}>
+                          @{m.username} <span className="text-gray-400">— {m.full_name}</span>
+                          {isExactMatch && <span className="ml-2 text-green-600">✓</span>}
+                        </button>
+                      );
+                    })}
+                  {genUserSearch && approvedMembers.filter(m => {
+                    const q = genUserSearch.toLowerCase();
+                    return (m.username || "").toLowerCase().includes(q) || (m.full_name || "").toLowerCase().includes(q);
+                  }).length === 0 && (
+                    <p className="px-4 py-3 text-sm text-gray-400">No users found</p>
+                  )}
+                </div>
+              )}
             </div>
             <button onClick={handleGenerate} disabled={genBusy || remainingCount <= 0}
               className="h-11 px-6 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold transition-colors disabled:opacity-40 disabled:pointer-events-none">
