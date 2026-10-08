@@ -56,6 +56,7 @@ export default function Admin() {
   const [transferCodeCount, setTransferCodeCount] = useState("1");
   const [transferring, setTransferring] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [autoRedeem, setAutoRedeem] = useState(false);
 
   const { data: members = [] } = useTable("members");
   const { data: codes = [], refetch: refetchCodes } = useTable("maintenance_codes");
@@ -78,6 +79,7 @@ export default function Admin() {
     });
     const minSetting = settings.find(s => s.setting_key === "withdrawal_minimum_amount");
     if (minSetting) setMinAmount(minSetting.setting_value);
+    setAutoRedeem(map.auto_redeem_enabled === "true");
   }, [settings]);
 
   // Live countdown — re-render every second so maintenance timers tick down
@@ -534,6 +536,17 @@ export default function Admin() {
       toast.success(`Minimum withdrawal set to ₱${val.toLocaleString()}`);
     } catch { toast.error("Failed to update"); }
     setSavingMin(false);
+  }
+
+  async function toggleAutoRedeem() {
+    const newVal = !autoRedeem;
+    setAutoRedeem(newVal);
+    try {
+      const existing = settings.find(s => s.setting_key === "auto_redeem_enabled");
+      if (existing) await updateRecord("system_settings", existing.id, { setting_value: String(newVal) });
+      else await createRecord("system_settings", { setting_key: "auto_redeem_enabled", setting_value: String(newVal) });
+      toast.success(`Auto-redeem ${newVal ? "enabled" : "disabled"}`);
+    } catch { toast.error("Failed to update"); setAutoRedeem(!newVal); }
   }
 
   async function toggleTab(key) {
@@ -1455,6 +1468,21 @@ export default function Admin() {
               <Button onClick={saveMinAmount} disabled={savingMin} className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white">Save</Button>
             </div>
           </div>
+          {canManageTabs && (
+            <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Key className="w-5 h-5 text-teal-500" /> Auto-Redeem Codes</h2>
+              <div className="flex items-center justify-between p-3 rounded-xl border border-gray-100">
+                <div>
+                  <span className="font-medium text-gray-700">Auto-redeem unlocked codes</span>
+                  <p className="text-sm text-gray-500">When enabled, codes designated to members are automatically redeemed once the 10-hour unlock timer expires.</p>
+                </div>
+                <button onClick={toggleAutoRedeem}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${autoRedeem ? "bg-green-500" : "bg-gray-300"}`}>
+                  <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${autoRedeem ? "translate-x-6" : "translate-x-0.5"}`} />
+                </button>
+              </div>
+            </div>
+          )}
           <div className="bg-white rounded-3xl shadow-lg border border-gray-100 p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2"><Settings className="w-5 h-5 text-gray-500" /> Sidebar Tab Visibility</h2>
             <div className="space-y-3">

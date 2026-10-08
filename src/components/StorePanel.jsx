@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Eye, Calendar, Sparkles, KeyRound, CheckCircle2,
@@ -68,6 +68,7 @@ export default function StorePanel() {
   const { data: members = [] } = useTable("members");
   const { data: allCodes = [], refetch: refetchCodes } = useTable("maintenance_codes");
   const { data: transactions = [] } = useTable("transactions");
+  const { data: settings = [] } = useTable("system_settings");
   const { currentMember } = useCurrentMember(members);
 
   // Store accounts only — for the dropdown selector
@@ -134,6 +135,22 @@ export default function StorePanel() {
       return new Date(dateB) - new Date(dateA);
     });
   }, [myGeneratedCodes, availSearch]);
+
+  // Auto-redeem: when enabled, automatically redeem unlocked codes with a designated member
+  useEffect(() => {
+    if (!autoRedeemEnabled || !storeMember || autoRedeemRef.current) return;
+    const unlockedCodes = myGeneratedCodes.filter(c =>
+      !c.is_used && c.assigned_username && getUnlockSeconds(c) === 0
+    );
+    if (unlockedCodes.length === 0) return;
+    autoRedeemRef.current = true;
+    (async () => {
+      for (const c of unlockedCodes) {
+        await handleRedeemForMember(c);
+      }
+      autoRedeemRef.current = false;
+    })();
+  }, [now, autoRedeemEnabled, storeMember]);
 
   // Unlock timer: 10 hours from code creation
   function getUnlockSeconds(code) {
@@ -261,6 +278,14 @@ export default function StorePanel() {
 
   // Disable Generate if user typed text but hasn't clicked a dropdown item
   const genUnconfirmed = !!genUserSearch && !genUsername;
+
+  // Auto-redeem setting — controlled by admin/supadmin in Settings
+  const autoRedeemEnabled = useMemo(() => {
+    const s = settings.find(s => s.setting_key === "auto_redeem_enabled");
+    return s?.setting_value === "true";
+  }, [settings]);
+
+  const autoRedeemRef = useRef(false);
 
   async function handleGenerate() {
     const count = parseInt(genCount) || 1;
