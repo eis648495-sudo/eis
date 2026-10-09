@@ -7,14 +7,24 @@ import { maintenanceStatus, formatTime, formatGraceTime } from "../lib/helpers";
 export function MaintenanceBanner() {
   const [, setTick] = useState(0);
   const memberId = getSessionMemberId();
-  const { data: members = [] } = useTable("members", { enabled: !!memberId });
-  const { data: codes = [] } = useTable("maintenance_codes", { enabled: !!memberId });
+  const { data: members = [], refetch: refetchMembers } = useTable("members", { enabled: !!memberId });
+  const { data: codes = [], refetch: refetchCodes } = useTable("maintenance_codes", { enabled: !!memberId });
 
   useEffect(() => {
     if (!memberId) return;
     const interval = setInterval(() => setTick(t => t + 1), 1000);
     return () => clearInterval(interval);
   }, [memberId]);
+
+  // Poll for data changes so the banner updates after a redeem on any page
+  useEffect(() => {
+    if (!memberId) return;
+    const interval = setInterval(() => {
+      refetchMembers();
+      refetchCodes();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [memberId, refetchMembers, refetchCodes]);
 
   const member = memberId ? members.find(m => m.id === memberId) : null;
   if (!member) return null;

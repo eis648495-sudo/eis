@@ -15,7 +15,10 @@ export function maintenanceStatus(member, codes = []) {
   if (member.maintenance_timer_seconds > 0 && member.maintenance_timer_set_at) {
     const elapsed = Math.floor((Date.now() - new Date(member.maintenance_timer_set_at).getTime()) / 1000);
     const left = member.maintenance_timer_seconds - elapsed;
-    return { isGreen: left > 0, secondsLeft: Math.max(0, left), neverRedeemed: false };
+    if (left > 0) {
+      return { isGreen: true, secondsLeft: left, neverRedeemed: false };
+    }
+    // Timer expired — fall through to redeemed-codes check below
   }
 
   // User has redeemed a code — GREEN with 720h countdown from last redeem

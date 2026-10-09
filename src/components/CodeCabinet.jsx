@@ -81,7 +81,7 @@ export default function CodeCabinet() {
     setRedeemingId(codeRecord.id);
     try {
       // Mark code as used
-      await supabase
+      const { error: updateError } = await supabase
         .from("maintenance_codes")
         .update({
           is_used: true,
@@ -89,6 +89,12 @@ export default function CodeCabinet() {
           used_at: new Date().toISOString(),
         })
         .eq("id", codeRecord.id);
+      if (updateError) throw updateError;
+      // Clear any admin-set maintenance timer so the redeemed-code countdown takes over
+      await supabase.from("members").update({
+        maintenance_timer_seconds: null,
+        maintenance_timer_set_at: null,
+      }).eq("id", currentMember.id);
       // Record redemption as a transaction
       await supabase.from("transactions").insert({
         member_id: currentMember.id,
