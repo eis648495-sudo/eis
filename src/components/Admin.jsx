@@ -59,7 +59,7 @@ export default function Admin() {
   const [autoRedeem, setAutoRedeem] = useState(false);
 
   const { data: members = [] } = useTable("members");
-  const { data: codes = [], refetch: refetchCodes } = useTable("maintenance_codes");
+  const { data: codes = [], refetch: refetchCodes } = useTable("maintenance_codes", { order: "-created_at" });
   const { data: withdrawals = [] } = useTable("conversion_requests");
   const { data: gcashInfo = [] } = useTable("gcash_info");
   const { data: settings = [] } = useTable("system_settings");
@@ -194,11 +194,12 @@ export default function Admin() {
           assigned_username: newCode.assignedUsername || null,
         });
       }
-      await supabase.from("maintenance_codes").insert(records);
+      const { error } = await supabase.from("maintenance_codes").insert(records);
+      if (error) throw error;
       toast.success(`${count} code(s) generated!`);
       setNewCode({ ...newCode, assignedUsername: "" });
       refetchCodes();
-    } catch { toast.error("Failed to generate codes"); }
+    } catch (err) { toast.error(err?.message || "Failed to generate codes"); }
   }
 
   async function deleteCode(id) {
