@@ -374,9 +374,14 @@ export default function Admin() {
       if (codeRecord.assigned_username && codeRecord.assigned_username !== member.username) {
         toast.error(`This code is assigned to @${codeRecord.assigned_username}`); setRedeemBusy(false); return;
       }
-      await supabase.from("maintenance_codes").update({
+      const { error: updateError } = await supabase.from("maintenance_codes").update({
         is_used: true, used_by_member_id: member.id, used_at: new Date().toISOString(),
       }).eq("id", codeRecord.id);
+      if (updateError) throw updateError;
+      // Clear any admin-set maintenance timer so the redeemed-code countdown takes over
+      await supabase.from("members").update({
+        maintenance_timer_seconds: null, maintenance_timer_set_at: null,
+      }).eq("id", member.id);
       await supabase.from("transactions").insert({
         member_id: member.id, type: "maintenance_code", amount: 0,
         description: `Redeemed maintenance code: ${codeRecord.code}`, status: "completed",
