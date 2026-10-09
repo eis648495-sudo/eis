@@ -46,6 +46,8 @@ create table if not exists public.members (
   level3_count int default 0
 );
 
+-- Ensure placement_id exists on pre-existing tables (CREATE TABLE IF NOT EXISTS won't add it)
+alter table public.members add column if not exists placement_id uuid references public.members(id) on delete set null;
 create index if not exists idx_members_placement on public.members(placement_id);
 
 -- ========== MAINTENANCE CODES ==========
