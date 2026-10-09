@@ -192,8 +192,13 @@ export default function StorePanel() {
       });
       const { data: freshMembers } = await supabase.from("members").select("*");
       const { data: freshCodes } = await supabase.from("maintenance_codes").select("*");
-      await distributeUplineBonuses(member, freshMembers || members, freshCodes || allCodes);
-      toast.success("Code redeemed successfully!");
+      const freshMember = (freshMembers || members).find(m => m.id === member.id);
+      if (freshMember && freshMember.status !== "approved") {
+        toast.success("Code redeemed. Member must be placed under an upline before commissions are distributed.");
+      } else {
+        await distributeUplineBonuses(member, freshMembers || members, freshCodes || allCodes);
+        toast.success("Code redeemed successfully! Upline bonuses distributed.");
+      }
       refetchCodes();
     } catch (err) {
       toast.error(err.message || "Failed to redeem code");
