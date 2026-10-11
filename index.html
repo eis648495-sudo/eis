@@ -13,7 +13,9 @@
 
     <!-- Open Graph / Social sharing preview -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://mamlakahcommunity.vercel.app/" />
+    <!-- og:url omitted intentionally: a hardcoded canonical URL causes Facebook Messenger
+         to redirect shared referral links (e.g. /Register?ref=CODE) back to the base
+         site URL. Without og:url, Facebook uses the actual shared URL as the canonical URL. -->
     <meta property="og:title" content="Mamlakah Network System" />
     <meta property="og:description" content="MLM genealogy and referral management platform" />
     <meta property="og:image" content="https://mamlakahcommunity.vercel.app/og-image.png" />
