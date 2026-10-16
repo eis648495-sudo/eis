@@ -413,6 +413,7 @@ export default function Admin() {
       };
       if (member.status === "inactive") {
         memberUpdates.status = "approved";
+        memberUpdates.approved_date = new Date().toISOString();
       }
       await supabase.from("members").update(memberUpdates).eq("id", member.id);
       await supabase.from("transactions").insert({
