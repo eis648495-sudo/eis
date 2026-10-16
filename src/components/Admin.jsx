@@ -291,10 +291,21 @@ export default function Admin() {
 
   async function restoreMember(id) {
     try {
-      let { error } = await updateRecord("members", id, { status: "approved", deleted_date: null });
-      if (error) ({ error } = await supabase.from("members").update({ status: "approved" }).eq("id", id));
+      let { error } = await updateRecord("members", id, { status: "inactive", deleted_date: null });
+      if (error) ({ error } = await supabase.from("members").update({ status: "inactive" }).eq("id", id));
       if (error) throw error;
-      toast.success("Account restored");
+      // Zero out the balance with an adjustment transaction while keeping old history
+      const currentBalance = getMemberBalance(id);
+      if (currentBalance !== 0) {
+        await createRecord("transactions", {
+          member_id: id,
+          type: "adjustment",
+          amount: -currentBalance,
+          status: "completed",
+          description: "Balance reset to zero on account restoration",
+        });
+      }
+      toast.success("Account restored as inactive (balance reset to zero)");
       window.location.reload();
     } catch (err) { toast.error(err?.message || "Failed to restore"); }
   }
@@ -655,10 +666,11 @@ export default function Admin() {
           {/* Members List — Card Layout */}
           {(() => {
             const approved = filteredMembers.filter(m => m.status === "approved");
+            const inactiveMembers = filteredMembers.filter(m => m.status === "inactive");
             const activeMaintenance = approved.filter(m => maintenanceStatus(m, codes).isGreen);
             const expiredMaintenance = approved.filter(m => !maintenanceStatus(m, codes).isGreen);
 
-            const renderRow = (m, index, isExpired = false) => {
+            const renderRow = (m, index, isExpired = false, isInactive = false) => {
               const status = maintenanceStatus(m, codes);
               return (
                 <div key={m.id} className="flex items-center gap-3 py-3 border-b border-gray-900 last:border-0 px-2 hover:bg-gray-50 rounded-xl transition-colors">
@@ -672,7 +684,12 @@ export default function Admin() {
                   </div>
                   {/* Status badge */}
                   <div className="flex-shrink-0">
-                    {status.isGreen ? (
+                    {isInactive ? (
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-200 rounded-lg">
+                        <div className="w-2 h-2 bg-gray-500 rounded-full" />
+                        <span className="text-sm font-medium text-gray-600">Inactive</span>
+                      </div>
+                    ) : status.isGreen ? (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 rounded-lg">
                         <div className="w-2 h-2 bg-green-500 rounded-full" />
                         <span className="text-sm font-medium text-green-700">{formatTime(status.secondsLeft)}</span>
@@ -703,7 +720,7 @@ export default function Admin() {
                     {(isSupAdmin || isOwner) && <button onClick={() => setOverrideMember({ member: m, action: "add", hours: "" })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>}
 
                     {(isSupAdmin || isOwner) && <button onClick={() => setEditBalance({ member: m, amount: "", action: "add", reason: "" })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>}
-                    {isExpired && getDirectDownlineCount(m.id) === 0 && (
+                    {getDirectDownlineCount(m.id) === 0 && (
                       <button onClick={() => setConfirmDelete({ type: "member", id: m.id, name: m.full_name || m.username })} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Delete Account"><Trash2 className="w-4 h-4" /></button>
                     )}
                   </div>
@@ -742,6 +759,21 @@ export default function Admin() {
                     ) : expiredMaintenance.map((m, i) => renderRow(m, i, true))}
                   </div>
                 </div>
+
+                {/* Inactive Members */}
+                {inactiveMembers.length > 0 && (
+                  <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 bg-gray-100">
+                      <h3 className="font-bold text-gray-700 flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 bg-gray-500 rounded-full" />
+                        Inactive ({inactiveMembers.length})
+                      </h3>
+                    </div>
+                    <div className="p-2 max-h-[640px] overflow-y-auto overscroll-contain touch-pan-y scroll-thick">
+                      {inactiveMembers.map((m, i) => renderRow(m, i, false, true))}
+                    </div>
+                  </div>
+                )}
               </>
             );
           })()}
@@ -1273,7 +1305,7 @@ export default function Admin() {
                     <td className="px-6 py-4 text-sm text-gray-600">@{m.username}</td>
                     <td className="px-6 py-4 text-sm text-gray-400">{m.deleted_date ? formatDate(m.deleted_date, "MMM d, yyyy") : "—"}</td>
                     <td className="px-6 py-4">
-                      <Button onClick={() => restoreMember(m.id)} size="sm" className="bg-teal-600 text-white h-8 px-3 text-xs"><RotateCcw className="w-3 h-3 mr-1" /> Restore</Button>
+                      <Button onClick={() => restoreMember(m.id)} size="sm" className="bg-teal-600 text-white h-8 px-3 text-xs"><RotateCcw className="w-3 h-3 mr-1" /> Restore as Inactive</Button>
                     </td>
                   </tr>
                 ))}
