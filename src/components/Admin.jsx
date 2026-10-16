@@ -407,9 +407,14 @@ export default function Admin() {
       }).eq("id", codeRecord.id);
       if (updateError) throw updateError;
       // Clear any admin-set maintenance timer so the redeemed-code countdown takes over
-      await supabase.from("members").update({
+      // If the member was restored as inactive, redeeming a code reactivates them to approved
+      const memberUpdates = {
         maintenance_timer_seconds: null, maintenance_timer_set_at: null,
-      }).eq("id", member.id);
+      };
+      if (member.status === "inactive") {
+        memberUpdates.status = "approved";
+      }
+      await supabase.from("members").update(memberUpdates).eq("id", member.id);
       await supabase.from("transactions").insert({
         member_id: member.id, type: "maintenance_code", amount: 0,
         description: `Redeemed maintenance code: ${codeRecord.code}`, status: "completed",
