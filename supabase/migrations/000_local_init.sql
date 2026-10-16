@@ -32,6 +32,7 @@ create table if not exists public.members (
   facebook_name text,
   backup_mobile text,
   approved_date timestamptz,
+  deleted_date timestamptz,
   created_date timestamptz default now(),
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
