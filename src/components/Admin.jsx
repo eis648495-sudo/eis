@@ -407,15 +407,16 @@ export default function Admin() {
       }).eq("id", codeRecord.id);
       if (updateError) throw updateError;
       // Clear any admin-set maintenance timer so the redeemed-code countdown takes over
-      // If the member was restored as inactive, redeeming a code reactivates them to approved
+      // If the member is not yet approved (inactive/pending), redeeming a code reactivates them to approved
       const memberUpdates = {
         maintenance_timer_seconds: null, maintenance_timer_set_at: null,
       };
-      if (member.status === "inactive") {
+      if (member.status !== "approved") {
         memberUpdates.status = "approved";
         memberUpdates.approved_date = new Date().toISOString();
       }
-      await supabase.from("members").update(memberUpdates).eq("id", member.id);
+      const { error: memberUpdateError } = await supabase.from("members").update(memberUpdates).eq("id", member.id);
+      if (memberUpdateError) throw memberUpdateError;
       await supabase.from("transactions").insert({
         member_id: member.id, type: "maintenance_code", amount: 0,
         description: `Redeemed maintenance code: ${codeRecord.code}`, status: "completed",
