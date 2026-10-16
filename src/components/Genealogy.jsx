@@ -35,7 +35,7 @@ export default function Genealogy() {
     if (currentMember && !selected) setSelected(currentMember);
   }, [currentMember]);
 
-  const allApproved = useMemo(() => members.filter(m => m.status === "approved"), [members]);
+  const allApproved = useMemo(() => members.filter(m => m.status === "approved" || m.status === "inactive"), [members]);
   const lobbyMembers = useMemo(() => members.filter(m => m.status === "pending" && m.referrer_id === currentMember?.id), [members, currentMember?.id]);
   const isSuperAdmin = currentMember?.username === "supadmin" || currentMember?.username === "admin";
 
