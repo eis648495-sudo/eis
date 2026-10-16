@@ -1935,9 +1935,6 @@ export default function Admin() {
                   : "Are you sure you want to delete this code?"}
               </p>
               <p className="text-sm font-semibold text-gray-700 mb-6 break-all">{confirmDelete.name}</p>
-              {confirmDelete.type === "member" && (
-  
-              )}
               <div className="flex gap-3">
                 <Button onClick={() => setConfirmDelete(null)} variant="outline" className="flex-1">Cancel</Button>
                 <Button onClick={confirmDeleteAction} className="flex-1 bg-red-600 hover:bg-red-700 text-white">
