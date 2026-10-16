@@ -703,7 +703,7 @@ export default function Admin() {
                     {(isSupAdmin || isOwner) && <button onClick={() => setOverrideMember({ member: m, action: "add", hours: "" })} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Maintenance Override"><Clock className="w-4 h-4" /></button>}
 
                     {(isSupAdmin || isOwner) && <button onClick={() => setEditBalance({ member: m, amount: "", action: "add", reason: "" })} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Edit Balance"><Wallet className="w-4 h-4" /></button>}
-                    {isExpired && getDirectDownlineCount(m.id) === 0 && (
+                    {getDirectDownlineCount(m.id) === 0 && (
                       <button onClick={() => setConfirmDelete({ type: "member", id: m.id, name: m.full_name || m.username })} className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors" title="Delete Account"><Trash2 className="w-4 h-4" /></button>
                     )}
                   </div>
@@ -1258,23 +1258,20 @@ export default function Admin() {
         <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 bg-red-50">
             <h2 className="font-semibold text-red-900 flex items-center gap-2"><Trash2 className="w-4 h-4" /> Deleted Accounts</h2>
-            <p className="text-sm text-red-600 mt-1">These accounts have been deleted. You can restore them at any time.</p>
+            <p className="text-sm text-red-600 mt-1">These accounts have been deleted.</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead><tr className="border-b border-gray-100">
-                {["Name", "Username", "Deleted On", "Actions"].map(h => <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>)}
+                {["Name", "Username", "Deleted On"].map(h => <th key={h} className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">{h}</th>)}
               </tr></thead>
               <tbody>
-                {deletedMembers.length === 0 ? <tr><td colSpan="4" className="text-center py-12 text-gray-400">No deleted accounts</td></tr> :
+                {deletedMembers.length === 0 ? <tr><td colSpan="3" className="text-center py-12 text-gray-400">No deleted accounts</td></tr> :
                 deletedMembers.map(m => (
                   <tr key={m.id} className="border-b border-gray-50 hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{m.full_name}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">@{m.username}</td>
                     <td className="px-6 py-4 text-sm text-gray-400">{m.deleted_date ? formatDate(m.deleted_date, "MMM d, yyyy") : "—"}</td>
-                    <td className="px-6 py-4">
-                      <Button onClick={() => restoreMember(m.id)} size="sm" className="bg-teal-600 text-white h-8 px-3 text-xs"><RotateCcw className="w-3 h-3 mr-1" /> Restore</Button>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -1938,9 +1935,6 @@ export default function Admin() {
                   : "Are you sure you want to delete this code?"}
               </p>
               <p className="text-sm font-semibold text-gray-700 mb-6 break-all">{confirmDelete.name}</p>
-              {confirmDelete.type === "member" && (
-                <p className="text-xs text-gray-400 mb-4">They can be restored later from the Deleted tab.</p>
-              )}
               <div className="flex gap-3">
                 <Button onClick={() => setConfirmDelete(null)} variant="outline" className="flex-1">Cancel</Button>
                 <Button onClick={confirmDeleteAction} className="flex-1 bg-red-600 hover:bg-red-700 text-white">
