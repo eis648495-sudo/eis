@@ -57,6 +57,9 @@ export default function Admin() {
   const [transferring, setTransferring] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [autoRedeem, setAutoRedeem] = useState(false);
+  const [restoreModal, setRestoreModal] = useState(null);
+  const [restoreSearch, setRestoreSearch] = useState("");
+  const [restorePlacementId, setRestorePlacementId] = useState("");
 
   const { data: members = [] } = useTable("members");
   const { data: codes = [], refetch: refetchCodes } = useTable("maintenance_codes", { order: "-created_at" });
@@ -289,11 +292,25 @@ export default function Admin() {
     } catch (err) { toast.error(err?.message || "Failed to delete"); }
   }
 
-  async function restoreMember(id) {
+  async function restoreMember(id, placementId) {
     try {
-      let { error } = await updateRecord("members", id, { status: "inactive", deleted_date: null });
-      if (error) ({ error } = await supabase.from("members").update({ status: "inactive" }).eq("id", id));
+      const updates = { status: "inactive", deleted_date: null };
+      if (placementId) {
+        const upline = members.find(m => m.id === placementId);
+        updates.placement_id = placementId;
+        updates.tree_level = (upline?.tree_level || 0) + 1;
+      }
+      let { error } = await updateRecord("members", id, updates);
+      if (error) {
+        const fallback = { status: "inactive" };
+        if (placementId) fallback.placement_id = placementId;
+        ({ error } = await supabase.from("members").update(fallback).eq("id", id));
+      }
       if (error) throw error;
+      if (placementId) {
+        const upline = members.find(m => m.id === placementId);
+        if (upline) await updateRecord("members", upline.id, { direct_downlines_count: (upline.direct_downlines_count || 0) + 1 });
+      }
       // Zero out the balance with an adjustment transaction while keeping old history
       const currentBalance = getMemberBalance(id);
       if (currentBalance !== 0) {
@@ -1305,7 +1322,7 @@ export default function Admin() {
                     <td className="px-6 py-4 text-sm text-gray-600">@{m.username}</td>
                     <td className="px-6 py-4 text-sm text-gray-400">{m.deleted_date ? formatDate(m.deleted_date, "MMM d, yyyy") : "—"}</td>
                     <td className="px-6 py-4">
-                      <Button onClick={() => restoreMember(m.id)} size="sm" className="bg-teal-600 text-white h-8 px-3 text-xs"><RotateCcw className="w-3 h-3 mr-1" /> Restore as Inactive</Button>
+                      <Button onClick={() => { setRestoreModal(m); setRestoreSearch(""); setRestorePlacementId(""); }} size="sm" className="bg-teal-600 text-white h-8 px-3 text-xs"><RotateCcw className="w-3 h-3 mr-1" /> Restore as Inactive</Button>
                     </td>
                   </tr>
                 ))}
@@ -1983,6 +2000,67 @@ export default function Admin() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Restore Placement Modal */}
+      {restoreModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setRestoreModal(null)}>
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2"><RotateCcw className="w-5 h-5 text-teal-600" /> Restore — {restoreModal.full_name || restoreModal.username}</h2>
+              <button onClick={() => setRestoreModal(null)} className="p-1 rounded-lg hover:bg-gray-100"><XIcon className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+                <p className="text-sm text-teal-800">The account will be restored as <strong>inactive</strong> with <strong>zero balance</strong>. Old transaction history is preserved. Select a username to place this account under in the tree.</p>
+              </div>
+              <div>
+                <Label>Place under (search username)</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Input value={restoreSearch} onChange={e => setRestoreSearch(e.target.value)} placeholder="Search username or name..." className="pl-10" autoFocus />
+                </div>
+                {restoreSearch && (
+                  <div className="mt-2 max-h-60 overflow-y-auto rounded-xl border border-gray-200 shadow-lg">
+                    {approvedMembers
+                      .filter(m => {
+                        if (m.id === restoreModal.id) return false;
+                        const q = restoreSearch.toLowerCase();
+                        return (m.full_name || "").toLowerCase().includes(q) || (m.username || "").toLowerCase().includes(q);
+                      })
+                      .slice(0, 20)
+                      .map(m => (
+                        <button key={m.id} type="button"
+                          onClick={() => { setRestorePlacementId(m.id); setRestoreSearch(""); }}
+                          className={`w-full text-left px-4 py-2.5 text-sm hover:bg-teal-50 transition-colors border-b border-gray-50 last:border-0 ${restorePlacementId === m.id ? "bg-teal-50 font-medium text-teal-700" : "text-gray-700"}`}>
+                          {m.full_name} <span className="text-gray-400">(@{m.username})</span> — {m.direct_downlines_count || 0}/10
+                        </button>
+                      ))}
+                    {approvedMembers.filter(m => {
+                      if (m.id === restoreModal.id) return false;
+                      const q = restoreSearch.toLowerCase();
+                      return (m.full_name || "").toLowerCase().includes(q) || (m.username || "").toLowerCase().includes(q);
+                    }).length === 0 && <p className="px-4 py-3 text-sm text-gray-400">No members found</p>}
+                  </div>
+                )}
+                {restorePlacementId && !restoreSearch && (
+                  <div className="mt-2 flex items-center justify-between w-full rounded-xl border border-gray-200 px-4 py-2.5 bg-teal-50">
+                    <span className="text-sm font-medium text-teal-700">
+                      {approvedMembers.find(m => m.id === restorePlacementId)?.full_name || ""} <span className="text-gray-400">(@{approvedMembers.find(m => m.id === restorePlacementId)?.username})</span>
+                    </span>
+                    <button type="button" onClick={() => setRestorePlacementId("")} className="text-gray-400 hover:text-red-500"><X className="w-4 h-4" /></button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-100 flex gap-3">
+              <Button onClick={() => setRestoreModal(null)} variant="outline" className="flex-1">Cancel</Button>
+              <Button onClick={() => { restoreMember(restoreModal.id, restorePlacementId || null); }} className="flex-1 bg-gradient-to-r from-teal-500 to-emerald-600 text-white">
+                <RotateCcw className="w-4 h-4 mr-1" /> Restore{restorePlacementId ? " & Place" : ""}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
