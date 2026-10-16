@@ -118,7 +118,8 @@ export default function Dashboard() {
       if (updateError) throw updateError;
       // Clear any admin-set maintenance timer so the redeemed-code countdown takes over
       // Fetch fresh member status from DB (component state may be stale if admin changed status)
-      const { data: freshSelf } = await supabase.from("members").select("*").eq("id", currentMember.id).single();
+      const { data: freshSelfRows } = await supabase.from("members").select("*").eq("id", currentMember.id).limit(1);
+      const freshSelf = freshSelfRows?.[0];
       const memberUpdates = {
         maintenance_timer_seconds: null,
         maintenance_timer_set_at: null,
